@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Rollup Tree Grid</title>
+    <!--  (c) 2014 Rally Software Development Corp.  All Rights Reserved. -->
+    <!--  Build Date: Mon Mar 31 2014 19:47:05 GMT-0700 (PDT) -->
+    
+    <script type="text/javascript">
+        var APP_BUILD_DATE = "Mon Mar 31 2014 19:47:05 GMT-0700 (PDT)";
+        var CHECKSUM = 4736550360;
+    </script>
+    
+    <script type="text/javascript" src="/apps/2.0rc2/sdk.js"></script>
+
+    <script type="text/javascript">
+        Rally.onReady(function() {
+             
+/**
+ * A link that pops up a version dialog box
+ */
+
+Ext.define('Rally.technicalservices.InfoLink',{
+    extend: 'Ext.Component',
+    alias: 'widget.tsinfolink',
+    
+    /**
+     * @cfg {String} informationHtml
+     * Additional text to be displayed on the popup dialog (for exmaple,
+     * to add a description of the app's use or functionality)
+     */
+    informationHtml: null,
+    
+    /**
+     * 
+     * cfg {String} title
+     * The title for the dialog box
+     */
+     title: "Build Information",
+    
+    renderTpl: "<div id='{id}-infolinkWrap' class='tsinfolink'>--</div>",
+
+    initComponent: function() {
+        this.callParent(arguments);
+       
+    },
+    
+    onRender: function() {
+        this.callParent(arguments);
+        this.mon(this.el,'click',this.onClick,this);
+    },
+    _generateChecksum: function(string){
+        var chk = 0x12345678,
+            i;
+        string = string.replace(/var CHECKSUM = .*;/,"");
+        
+        for (i = 0; i < string.length; i++) {
+            chk += (string.charCodeAt(i) * i);
+        }
+    
+        return chk;
+    },
+    _checkChecksum: function(container) {
+        var me = this;
+        Ext.Ajax.request({
+            url: document.URL,
+            params: {
+                id: 1
+            },
+            success: function (response) {
+                text = response.responseText;
+                if ( CHECKSUM ) {
+                    if ( CHECKSUM !== me._generateChecksum(text) ) {
+                        console.log("Checksums don't match!");
+                        if ( me.dialog ) {
+                            me.dialog.add({xtype:'container',html:'Checksums do not match'});
+                        }
+                    }
+                }
+            }
+        });
+    },
+    onClick: function(e) {
+        var me = this;
+        this._checkChecksum(this);
+        
+        var dialog_items = [];
+        
+        if ( this.informationHtml ) {
+            dialog_items.push({
+                xtype:'container',
+                html: this.informationHtml
+            });
+        }
+                
+        dialog_items.push({
+            xtype:'container',
+            html:"This app was created by the Rally Technical Services Team."
+        });
+        
+        if ( APP_BUILD_DATE ) {
+            dialog_items.push({
+                xtype:'container',
+                html:'Build date/time: ' + APP_BUILD_DATE
+            });
+        }
+        
+        if (this.dialog){this.dialog.destroy();}
+        this.dialog = Ext.create('Rally.ui.dialog.Dialog',{
+            defaults: { padding: 5, margin: 5 },
+            closable: true,
+            draggable: true,
+            title: me.title,
+            items: dialog_items
+        });
+        this.dialog.show();
+    }
+});
+
+/*
+ */
+Ext.define('Rally.technicalservices.Logger',{
+    constructor: function(config){
+        Ext.apply(this,config);
+    },
+    log: function(args){
+        var timestamp = "[ " + Ext.util.Format.date(new Date(), "Y-m-d H:i:s.u") + " ]";
+        //var output_args = arguments;
+        //output_args.unshift( [ "[ " + timestamp + " ]" ] );
+        //output_args = Ext.Array.push(output_args,arguments);
+        
+        var output_args = [];
+        output_args = Ext.Array.push(output_args,[timestamp]);
+        output_args = Ext.Array.push(output_args, Ext.Array.slice(arguments,0));
+
+        window.console && console.log.apply(console,output_args);
+    }
+
+});
+
+Ext.define('TSTreeModel',{
+    extend: 'Ext.data.Model',
+    fields: [
+        { name: 'FormattedID', type: 'String' },
+        { name: 'Name', type:'Name' },
+        { name: 'Rollup', type:'Float' }
+    ]
+});
+Ext.define('CustomApp', {
+    extend: 'Rally.app.App',
+    componentCls: 'app',
+    logger: new Rally.technicalservices.Logger(),
+    rollup_field: 'PlanEstimate',
+    items: [
+        {xtype:'container',itemId:'display_box'},
+        {xtype:'tsinfolink'}
+    ],
+    launch: function() {
+        this._getPortfolioItemNames().then({
+            scope: this,
+            success: function(pi_paths) {
+                if ( pi_paths.length > 0 ) {
+                    this._getPITreeStore(pi_paths);
+                }
+            },
+            failure: function(error) {
+                alert(error);
+            }
+        });
+    },
+    _getPortfolioItemNames:function() {
+        var deferred = Ext.create('Deft.Deferred');
+        Ext.create('Rally.data.wsapi.Store',{
+            model:'TypeDefinition',
+            filters: [{property:'TypePath',operator:'contains',value:'PortfolioItem/'}],
+            sorters: [{property:'Ordinal',direction:'Desc'}],
+            autoLoad: true,
+            listeners: {
+                scope: this,
+                load: function(store,records){
+                    this.logger.log(records);
+                    var pi_names = [];
+                    Ext.Array.each(records,function(record){
+                        pi_names.push(Ext.util.Format.lowercase(record.get('TypePath')));
+                    });
+                    deferred.resolve(pi_names);
+                }
+            }
+        });
+        return deferred.promise;
+    },
+    _getPITreeStore: function(pi_paths) {
+        var me = this;
+        Ext.create('Rally.data.wsapi.Store', {
+            model: pi_paths[0],
+            autoLoad: true,
+            listeners: {
+                scope: this,
+                load: function(store, top_pis, success) {
+                    var top_pi_hashes = [];
+                    var promises = [];
+                    
+                    Ext.Array.each(top_pis,function(top_pi){
+                        var pi_data = top_pi.getData();
+                        pi_data.leaf = true;
+                        if ( top_pi.get('Children') && top_pi.get('Children').Count > 0 ) {
+                            pi_data.leaf = false;
+                            pi_data.expanded = true;
+                            promises.push( me._getChildren(pi_data,pi_paths) );
+                        }
+                        top_pi_hashes.push(pi_data);
+                    });
+                    Deft.Promise.all(promises).then({
+                        scope: this,
+                        success: function(records){
+                            var tree_store = Ext.create('Ext.data.TreeStore',{
+                                model: TSTreeModel,
+                                root: {
+                                    expanded: true,
+                                    children: top_pi_hashes
+                                }
+                            });
+                            this._addTreeGrid(tree_store);
+                        },
+                        failure:function (error) {
+                            alert(error);
+                        }
+                    });
+                    
+                }
+            },
+            fetch: ['FormattedID','Name', 'State','Children']
+        });
+    },
+    _getChildren:function(node_hash,pi_paths) {
+        var deferred = Ext.create('Deft.Deferred');
+        var me = this;
+        this.logger.log("Get children for ", node_hash);
+        Ext.create('Rally.data.wsapi.Store',{
+            model: this._getChildModelForItem(node_hash,pi_paths),
+            filters: [
+                this._getChildFilterForItem(node_hash,pi_paths)
+            ],
+            fetch: ['FormattedID','Name','DirectChildrenCount','Children', this.rollup_field],
+            autoLoad: true,
+            listeners: {
+                scope: this,
+                load: function(store, records) {
+                    var child_hashes = [];
+                    var promises = [];
+                    
+                    Ext.Array.each(records,function(record){
+                        var record_data = record.getData();
+                        record_data.leaf = true;
+
+                        if ( record.get('Children') && record.get('Children').Count > 0 ) {
+                            record_data.leaf = false;
+                            record_data.expanded = true;
+                            promises.push( me._getChildren(record_data,pi_paths) );
+                        } else if ( record.get('DirectChildrenCount') && record.get('DirectChildrenCount') > 0)  {
+                            record_data.leaf = false;
+                            record_data.expanded = true;
+                            promises.push( me._getChildren(record_data,pi_paths) );
+                        }
+                        child_hashes.push(record_data);
+                    });
+                    node_hash.children = child_hashes;
+                    if ( promises.length > 0 ) {
+                        Deft.Promise.all(promises).then({
+                            scope: this,
+                            success: function(records){
+                                deferred.resolve();
+                            },
+                            failure: function(error) {
+                                deferred.reject(error);
+                            }
+                        });
+                    } else {
+                        deferred.resolve();
+                    }
+                }
+            }
+        });
+        return deferred.promise;
+    },
+    _addTreeGrid: function(tree_store) {
+        var pi_tree = this.down('#display_box').add({
+            xtype:'treepanel',
+            store: tree_store,
+            rootVisible: false,
+            columns: [{
+                xtype: 'treecolumn',
+                text: 'id',
+                dataIndex: 'FormattedID'
+            },
+            {
+                dataIndex: 'Name',
+                text: 'Name'
+            },
+            {
+                dataIndex: 'Rollup',
+                text: 'Rollup'
+            }]
+        });
+    },
+    _getChildModelForItem: function(node_hash,pi_paths){
+        var parent_model = Ext.util.Format.lowercase(node_hash._type);
+        var child_type = "PortfolioItem";
+        
+        if ( Ext.Array.indexOf(pi_paths,parent_model) == pi_paths.length - 1 ) {
+            child_type = 'HierarchicalRequirement';
+        } else if (Ext.Array.indexOf(pi_paths,parent_model) == - 1)  {
+            child_type = 'HierarchicalRequirement';
+        }
+        
+        return child_type;
+    },
+    _getChildFilterForItem: function(node_hash,pi_paths){
+        var parent_model = Ext.util.Format.lowercase(node_hash._type);
+        var child_filter = { property:'Parent.ObjectID', value: node_hash.ObjectID };
+        
+        if ( Ext.Array.indexOf(pi_paths,parent_model) == pi_paths.length - 1 ) {
+            child_filter = { property:'PortfolioItem.ObjectID', value: node_hash.ObjectID };
+        }
+        
+        return child_filter;
+    }
+});
+
+            
+               Rally.launchApp('CustomApp', {
+                   name: 'Rollup Tree Grid'
+               });
+        });
+    </script>
+    
+    <style type="text/css">
+
+.app {
+}
+.tsinfolink {
+    position:absolute;
+    right:0px;
+    width:5%;
+}
+    </style>
+
+</head>
+<body></body>
+</html>
