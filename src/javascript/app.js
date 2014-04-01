@@ -2,7 +2,7 @@ Ext.define('CustomApp', {
     extend: 'Rally.app.App',
     componentCls: 'app',
     logger: new Rally.technicalservices.Logger(),
-    rollup_field: 'PlanEstimate',
+    rollup_field: 'PERT',
     items: [
         {xtype:'container',itemId:'display_box'},
         {xtype:'tsinfolink'}
@@ -43,6 +43,7 @@ Ext.define('CustomApp', {
     },
     _getPITreeStore: function(pi_paths) {
         var me = this;
+        this.logger.log("_getPITreeStore",pi_paths);
         Ext.create('Rally.data.wsapi.Store', {
             model: pi_paths[0],
             autoLoad: true,
@@ -64,7 +65,7 @@ Ext.define('CustomApp', {
                     });
                     Deft.Promise.all(promises).then({
                         scope: this,
-                        success: function(records){
+                        success: function(node_hashes){
                             var tree_store = Ext.create('Ext.data.TreeStore',{
                                 model: TSTreeModel,
                                 root: {
@@ -87,7 +88,7 @@ Ext.define('CustomApp', {
     _getChildren:function(node_hash,pi_paths) {
         var deferred = Ext.create('Deft.Deferred');
         var me = this;
-        this.logger.log("Get children for ", node_hash);
+        this.logger.log("Get children for ", node_hash.FormattedID);
         Ext.create('Rally.data.wsapi.Store',{
             model: this._getChildModelForItem(node_hash,pi_paths),
             filters: [
@@ -100,6 +101,7 @@ Ext.define('CustomApp', {
                 load: function(store, records) {
                     var child_hashes = [];
                     var promises = [];
+                    var total_rollup = 0;
                     
                     Ext.Array.each(records,function(record){
                         var record_data = record.getData();
@@ -117,7 +119,6 @@ Ext.define('CustomApp', {
                         
                         // set value for calculating field
                         record_data.__rollup = record.get(me.rollup_field);
-                        
                         child_hashes.push(record_data);
                     });
                     node_hash.children = child_hashes;
@@ -125,13 +126,15 @@ Ext.define('CustomApp', {
                         Deft.Promise.all(promises).then({
                             scope: this,
                             success: function(records){
-                                deferred.resolve();
+                                node_hash.__rollup = this._calculateRollup(node_hash,child_hashes);
+                                deferred.resolve(node_hash);
                             },
                             failure: function(error) {
                                 deferred.reject(error);
                             }
                         });
                     } else {
+                        node_hash.__rollup = this._calculateRollup(node_hash,child_hashes);
                         deferred.resolve();
                     }
                 }
@@ -139,7 +142,24 @@ Ext.define('CustomApp', {
         });
         return deferred.promise;
     },
+    _calculateRollup: function(node_hash,child_hashes) {
+        var me = this;
+        // roll up the data
+        var total_rollup = 0;
+        this.logger.log("calculating rollup for ", node_hash.FormattedID);
+        Ext.Array.each(child_hashes,function(child){
+            var rollup_value = child.__rollup || 0;
+            me.logger.log("...", rollup_value);
+            total_rollup += rollup_value;
+        });
+        return total_rollup;
+    },
     _addTreeGrid: function(tree_store) {
+        var me = this;
+        var name_renderer = function(value,meta_data,record) {
+            return me._nameRenderer(value,meta_data,record);
+        }
+        
         var pi_tree = this.down('#display_box').add({
             xtype:'treepanel',
             store: tree_store,
@@ -147,17 +167,20 @@ Ext.define('CustomApp', {
             columns: [{
                 xtype: 'treecolumn',
                 text: 'id',
-                dataIndex: 'FormattedID'
-            },
-            {
-                dataIndex: 'Name',
-                text: 'Name'
+                dataIndex: 'FormattedID',
+                renderer: name_renderer,
+                flex: 2
             },
             {
                 dataIndex: '__rollup',
                 text: 'Rollup'
             }]
         });
+    },
+    _nameRenderer: function(value,meta_data,record) {
+        var me = this;
+        //me.logger.log("Display ", value, record.get('FormattedID'),record);
+        return value + ": " + record.get('Name');
     },
     _getChildModelForItem: function(node_hash,pi_paths){
         var parent_model = Ext.util.Format.lowercase(node_hash._type);

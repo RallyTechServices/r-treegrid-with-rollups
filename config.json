@@ -1,6 +1,6 @@
 {
     "name": "Rollup Tree Grid",
     "className": "CustomApp",
-    "server": "https://demo01.rallydev.com",
+    "server": "https://audemo.rallydev.com",
     "sdk": "2.0rc2"
 }

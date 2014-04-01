@@ -3,6 +3,7 @@ Ext.define('TSTreeModel',{
     fields: [
         { name: 'FormattedID', type: 'String' },
         { name: 'Name', type:'Name' },
+        { name: '_type', type:'String' },
         { name: '__rollup', type:'Float' }
     ]
 });
