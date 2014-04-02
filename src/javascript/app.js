@@ -30,7 +30,6 @@ Ext.define('CustomApp', {
             listeners: {
                 scope: this,
                 load: function(store,records){
-                    this.logger.log(records);
                     var pi_names = [];
                     Ext.Array.each(records,function(record){
                         pi_names.push(Ext.util.Format.lowercase(record.get('TypePath')));
@@ -88,13 +87,12 @@ Ext.define('CustomApp', {
     _getChildren:function(node_hash,pi_paths) {
         var deferred = Ext.create('Deft.Deferred');
         var me = this;
-        this.logger.log("Get children for ", node_hash.FormattedID);
         Ext.create('Rally.data.wsapi.Store',{
             model: this._getChildModelForItem(node_hash,pi_paths),
             filters: [
                 this._getChildFilterForItem(node_hash,pi_paths)
             ],
-            fetch: ['FormattedID','Name','DirectChildrenCount','Children', me.rollup_field],
+            fetch: ['FormattedID','Name','DirectChildrenCount','Children','AcceptedDate','ScheduleState', me.rollup_field],
             autoLoad: true,
             listeners: {
                 scope: this,
@@ -119,6 +117,9 @@ Ext.define('CustomApp', {
                         
                         // set value for calculating field
                         record_data.__rollup = record.get(me.rollup_field);
+                        if ( me._isAccepted(record_data) ) {
+                            record_data.__accepted_rollup = record.get(me.rollup_field);
+                        }
                         child_hashes.push(record_data);
                     });
                     node_hash.children = child_hashes;
@@ -126,7 +127,8 @@ Ext.define('CustomApp', {
                         Deft.Promise.all(promises).then({
                             scope: this,
                             success: function(records){
-                                node_hash.__rollup = this._calculateRollup(node_hash,child_hashes);
+                                node_hash.__rollup = this._calculateRollup(node_hash,child_hashes,'__rollup');
+                                node_hash.__accepted_rollup = this._calculateRollup(node_hash,child_hashes,'__accepted_rollup');
                                 deferred.resolve(node_hash);
                             },
                             failure: function(error) {
@@ -134,7 +136,8 @@ Ext.define('CustomApp', {
                             }
                         });
                     } else {
-                        node_hash.__rollup = this._calculateRollup(node_hash,child_hashes);
+                        node_hash.__rollup = this._calculateRollup(node_hash,child_hashes,'__rollup');
+                        node_hash.__accepted_rollup = this._calculateRollup(node_hash,child_hashes,'__accepted_rollup');
                         deferred.resolve();
                     }
                 }
@@ -142,14 +145,22 @@ Ext.define('CustomApp', {
         });
         return deferred.promise;
     },
-    _calculateRollup: function(node_hash,child_hashes) {
+    _isAccepted: function(record_data) {
+        this.logger.log("_isAccepted",record_data.FormattedID,record_data);
+        var accepted = false; 
+        if ( record_data.AcceptedDate !== null ) {
+            accepted = true;
+        }
+        return accepted;
+    },
+    _calculateRollup: function(node_hash,child_hashes,field_name) {
         var me = this;
         // roll up the data
         var total_rollup = 0;
-        this.logger.log("calculating rollup for ", node_hash.FormattedID);
+        
+        //this.logger.log("calculating rollup for ", node_hash.FormattedID, node_hash);
         Ext.Array.each(child_hashes,function(child){
-            var rollup_value = child.__rollup || 0;
-            me.logger.log("...", rollup_value);
+            var rollup_value = child[field_name] || 0;
             total_rollup += rollup_value;
         });
         return total_rollup;
@@ -173,7 +184,20 @@ Ext.define('CustomApp', {
             },
             {
                 dataIndex: '__rollup',
-                text: 'Rollup'
+                text: 'PERT'
+            },
+            {
+                dataIndex: '__accepted_rollup',
+                text: 'PERT Completed'
+            },
+            {
+                dataIndex: '__accepted_rollup',
+                text: 'Pert Remaining',
+                renderer: function(value,meta_data,record){
+                    var total_rollup = record.get('__rollup') || 0;
+                    var accepted_rollup = record.get('__accepted_rollup') || 0;
+                    return total_rollup - accepted_rollup;
+                }
             }]
         });
     },
