@@ -5,3 +5,33 @@
     right:0px;
     width:5%;
 }
+
+.x-tree-icon { display: none !important; }
+
+.x-column-header-inner {
+    color: #222222;
+    font-family: ProximaNovaSemiBold, Helvetica, Arial;
+    font-size: 10px;
+    font-weight: normal;
+    line-height: 12px;
+    margin-right: 15px;
+    text-overflow: clip;
+    -ms-text-overflow: clip;
+    text-transform: uppercase;
+}
+
+.x-column-header {
+    border-bottom-color: rgb(34, 34, 34);
+    border-bottom-style: solid;
+    border-bottom-width: 4px;
+    border-top-style: none;
+}
+
+.x-panel-default, .x-grid-header-ct, .yes-harmonized .x-panel-body-default  {
+    border-color: #fff;
+}
+
+.x-grid-cell-inner {
+    font-family: NotoSans, Helvetica, Arial;
+    font-size: 12px;
+}

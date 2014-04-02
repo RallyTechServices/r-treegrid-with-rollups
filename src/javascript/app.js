@@ -4,7 +4,7 @@ Ext.define('CustomApp', {
     logger: new Rally.technicalservices.Logger(),
     rollup_field: 'PERT',
     items: [
-        {xtype:'container',itemId:'display_box'},
+        {xtype:'container',itemId:'display_box', margin: 5},
         {xtype:'tsinfolink'}
     ],
     launch: function() {
@@ -177,7 +177,7 @@ Ext.define('CustomApp', {
             rootVisible: false,
             columns: [{
                 xtype: 'treecolumn',
-                text: 'id',
+                text: '',
                 dataIndex: 'FormattedID',
                 renderer: name_renderer,
                 flex: 2
