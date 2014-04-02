@@ -2,42 +2,57 @@ Ext.define('CustomApp', {
     extend: 'Rally.app.App',
     componentCls: 'app',
     logger: new Rally.technicalservices.Logger(),
-    rollup_field: 'PERT',
+    pert_field_name: 'PERT',
     items: [
+        {xtype:'container',itemId:'message_box'},
         {xtype:'container',itemId:'display_box', margin: 5},
         {xtype:'tsinfolink'}
     ],
     launch: function() {
-        this._getPortfolioItemNames().then({
-            scope: this,
-            success: function(pi_paths) {
-                if ( pi_paths.length > 0 ) {
-                    this._getPITreeStore(pi_paths);
+        if (typeof(this.getAppId()) == 'undefined' ) {
+            // not inside Rally
+            this._showExternalSettingsDialog(this.getSettingsFields());
+        } else {
+            this._getData();
+        }
+    },
+    _getData: function() {
+            this._getPortfolioItemNames().then({
+                scope: this,
+                success: function(pi_paths) {
+                    if ( pi_paths.length > 0 ) {
+                        this._getPITreeStore(pi_paths);
+                    }
+                },
+                failure: function(error) {
+                    this.down('#message_box').update(error);
                 }
-            },
-            failure: function(error) {
-                alert(error);
-            }
-        });
+            });
     },
     _getPortfolioItemNames:function() {
         var deferred = Ext.create('Deft.Deferred');
-        Ext.create('Rally.data.wsapi.Store',{
-            model:'TypeDefinition',
-            filters: [{property:'TypePath',operator:'contains',value:'PortfolioItem/'}],
-            sorters: [{property:'Ordinal',direction:'Desc'}],
-            autoLoad: true,
-            listeners: {
-                scope: this,
-                load: function(store,records){
-                    var pi_names = [];
-                    Ext.Array.each(records,function(record){
-                        pi_names.push(Ext.util.Format.lowercase(record.get('TypePath')));
-                    });
-                    deferred.resolve(pi_names);
+
+        this.pert_field_name = this.getSetting('pert_field_name');
+        if ( typeof( this.pert_field_name ) == 'undefined' ) {
+            deferred.reject("Select 'Edit App Settings' from the gear menu to select a field that holds PERT values");
+        } else {
+            Ext.create('Rally.data.wsapi.Store',{
+                model:'TypeDefinition',
+                filters: [{property:'TypePath',operator:'contains',value:'PortfolioItem/'}],
+                sorters: [{property:'Ordinal',direction:'Desc'}],
+                autoLoad: true,
+                listeners: {
+                    scope: this,
+                    load: function(store,records){
+                        var pi_names = [];
+                        Ext.Array.each(records,function(record){
+                            pi_names.push(Ext.util.Format.lowercase(record.get('TypePath')));
+                        });
+                        deferred.resolve(pi_names);
+                    }
                 }
-            }
-        });
+            });
+        }
         return deferred.promise;
     },
     _getPITreeStore: function(pi_paths) {
@@ -92,7 +107,7 @@ Ext.define('CustomApp', {
             filters: [
                 this._getChildFilterForItem(node_hash,pi_paths)
             ],
-            fetch: ['FormattedID','Name','DirectChildrenCount','Children','AcceptedDate','ScheduleState', me.rollup_field],
+            fetch: ['FormattedID','Name','DirectChildrenCount','Children','AcceptedDate','ScheduleState', me.pert_field_name],
             autoLoad: true,
             listeners: {
                 scope: this,
@@ -116,9 +131,9 @@ Ext.define('CustomApp', {
                         }
                         
                         // set value for calculating field
-                        record_data.__rollup = record.get(me.rollup_field);
+                        record_data.__rollup = record.get(me.pert_field_name);
                         if ( me._isAccepted(record_data) ) {
-                            record_data.__accepted_rollup = record.get(me.rollup_field);
+                            record_data.__accepted_rollup = record.get(me.pert_field_name);
                         }
                         child_hashes.push(record_data);
                     });
@@ -239,5 +254,59 @@ Ext.define('CustomApp', {
         }
         
         return child_filter;
+    },
+    getSettingsFields: function() {
+        return [{
+            name: 'pert_field_name',
+            xtype: 'rallyfieldcombobox',
+            model: 'HierarchicalRequirement',
+            fieldLabel: 'PERT Field Name',
+            _isNotHidden: function(field) {
+                var should_show_field = true;
+                if ( field.hidden ) {
+                    should_show_field = false;
+                }
+                if ( field.attributeDefinition ) {
+                    var type = field.attributeDefinition.AttributeType;
+                    if ( type != "QUANTITY" && type != "INTEGER" && type != "DECIMAL"  ) {
+                        should_show_field = false;
+                    }
+                } else {
+                    should_show_field = false;
+                }
+                return should_show_field;
+            },
+            readyEvent: 'ready' //event fired to signify readiness
+        }];
+    },
+    // ONLY FOR RUNNING EXTERNALLY
+    _showExternalSettingsDialog: function(fields){
+        var me = this;
+        if ( this.settings_dialog ) { this.settings_dialog.destroy(); }
+        this.settings_dialog = Ext.create('Rally.ui.dialog.Dialog', {
+             autoShow: false,
+             draggable: true,
+             width: 400,
+             title: 'Settings',
+             buttons: [{ 
+                text: 'OK',
+                handler: function(cmp){
+                    var settings = {};
+                    Ext.Array.each(fields,function(field){
+                        settings[field.name] = cmp.up('rallydialog').down('[name="' + field.name + '"]').getValue();
+                    });
+                    me.settings = settings;
+                    cmp.up('rallydialog').destroy();
+                    me._getData();
+                }
+            }],
+             items: [
+                {xtype:'container',html: "&nbsp;", padding: 5, margin: 5},
+                {xtype:'container',itemId:'field_box', padding: 5, margin: 5}]
+         });
+         Ext.Array.each(fields,function(field){
+            me.settings_dialog.down('#field_box').add(field);
+         });
+         this.settings_dialog.show();
     }
 });
