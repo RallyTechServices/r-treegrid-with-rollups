@@ -184,6 +184,18 @@ Ext.define('CustomApp', {
             },
             {
                 dataIndex: '__rollup',
+                text: 'PERT Progress',
+                renderer: function(value,meta_data,record) {
+                    return Ext.create('Rally.technicalservices.ProgressBarTemplate',{
+                        numeratorField: '__accepted_rollup',
+                        denominatorField: '__rollup',
+                        percentDoneName: '__rollup'
+                    }).apply(record.getData());
+                    
+                }
+            },
+            {
+                dataIndex: '__rollup',
                 text: 'PERT'
             },
             {
