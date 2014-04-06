@@ -5,6 +5,7 @@ Ext.define('TSTreeModel',{
         { name: 'Name', type:'String' },
         { name: 'ScheduleState', type:'String' },
         { name: '_type', type:'String' },
+        { name: '__original_value', type: 'auto' },
         { name: '__rollup', type:'Float' },
         { name: '__accepted_rollup', type: 'Float' }
     ]

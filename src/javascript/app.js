@@ -33,8 +33,10 @@ Ext.define('CustomApp', {
         var deferred = Ext.create('Deft.Deferred');
 
         this.pert_field_name = this.getSetting('pert_field_name');
-        if ( typeof( this.pert_field_name ) == 'undefined' ) {
-            deferred.reject("Select 'Edit App Settings' from the gear menu to select a field that holds PERT values");
+        this.original_pert_field_name = this.getSetting('original_pert_field_name');
+        
+        if ( typeof( this.pert_field_name ) == 'undefined' || typeof(this.original_pert_field_name) == 'undefined' ) {
+            deferred.reject("Select 'Edit App Settings' from the gear menu to configure fields to use for calculations");
         } else {
             Ext.create('Rally.data.wsapi.Store',{
                 model:'TypeDefinition',
@@ -69,6 +71,7 @@ Ext.define('CustomApp', {
                     
                     Ext.Array.each(top_pis,function(top_pi){
                         var pi_data = top_pi.getData();
+                        pi_data.__original_value = top_pi.get(me.original_pert_field_name);
                         pi_data.leaf = true;
                         if ( top_pi.get('Children') && top_pi.get('Children').Count > 0 ) {
                             pi_data.leaf = false;
@@ -96,7 +99,7 @@ Ext.define('CustomApp', {
                     
                 }
             },
-            fetch: ['FormattedID','Name', 'State','Children']
+            fetch: ['FormattedID','Name', 'State','Children', this.original_pert_field_name]
         });
     },
     _getChildren:function(node_hash,pi_paths) {
@@ -199,8 +202,24 @@ Ext.define('CustomApp', {
                 flex: 2
             },
             {
+                dataIndex: '__original_value',
+                text: 'Original PERT'
+            },
+            {
                 dataIndex: '__rollup',
-                text: 'PERT Progress',
+                text: 'Progress by Original',
+                renderer: function(value,meta_data,record) {
+                    return Ext.create('Rally.technicalservices.ProgressBarTemplate',{
+                        numeratorField: '__accepted_rollup',
+                        denominatorField: '__original_value',
+                        percentDoneName: '__original_value'
+                    }).apply(record.getData());
+                    
+                }
+            },
+            {
+                dataIndex: '__rollup',
+                text: 'Progress by Rollup',
                 renderer: function(value,meta_data,record) {
                     return Ext.create('Rally.technicalservices.ProgressBarTemplate',{
                         numeratorField: '__accepted_rollup',
@@ -212,7 +231,7 @@ Ext.define('CustomApp', {
             },
             {
                 dataIndex: '__rollup',
-                text: 'PERT'
+                text: 'Total Rollup'
             },
             {
                 dataIndex: '__accepted_rollup',
@@ -257,26 +276,40 @@ Ext.define('CustomApp', {
         return child_filter;
     },
     getSettingsFields: function() {
+        var _chooseOnlyNumberFields = function(field){
+            var should_show_field = true;
+            if ( field.hidden ) {
+                should_show_field = false;
+            }
+            if ( field.attributeDefinition ) {
+                var type = field.attributeDefinition.AttributeType;
+                if ( type != "QUANTITY" && type != "INTEGER" && type != "DECIMAL"  ) {
+                    should_show_field = false;
+                }
+            } else {
+                should_show_field = false;
+            }
+            return should_show_field;
+        };
+        
         return [{
             name: 'pert_field_name',
             xtype: 'rallyfieldcombobox',
             model: 'HierarchicalRequirement',
-            fieldLabel: 'PERT Field Name',
-            _isNotHidden: function(field) {
-                var should_show_field = true;
-                if ( field.hidden ) {
-                    should_show_field = false;
-                }
-                if ( field.attributeDefinition ) {
-                    var type = field.attributeDefinition.AttributeType;
-                    if ( type != "QUANTITY" && type != "INTEGER" && type != "DECIMAL"  ) {
-                        should_show_field = false;
-                    }
-                } else {
-                    should_show_field = false;
-                }
-                return should_show_field;
-            },
+            fieldLabel: 'PERT Field',
+            width: 300,
+            labelWidth: 150,
+            _isNotHidden: _chooseOnlyNumberFields,
+            readyEvent: 'ready' //event fired to signify readiness
+        },
+        {
+            name: 'original_pert_field_name',
+            xtype: 'rallyfieldcombobox',
+            model: 'PortfolioItem',
+            fieldLabel: 'Original PERT Field',
+            _isNotHidden: _chooseOnlyNumberFields,
+            width: 300,
+            labelWidth: 150,
             readyEvent: 'ready' //event fired to signify readiness
         }];
     },
@@ -309,5 +342,33 @@ Ext.define('CustomApp', {
             me.settings_dialog.down('#field_box').add(field);
          });
          this.settings_dialog.show();
+    },
+    /*
+     * Override so that the settings box fits (shows the buttons)
+     */
+    showSettings: function(options) {
+//        this._appSettings = Ext.create('Rally.app.AppSettings', Ext.apply({
+//            fields: this.getSettingsFields(),
+//            settings: this.getSettings(),
+//            defaultSettings: this.getDefaultSettings(),
+//            context: this.getContext(),
+//            settingsScope: this.settingsScope
+//        }, options));
+        this._appSettings = Ext.create('Rally.app.AppSettings', {
+            fields: this.getSettingsFields(),
+            settings: this.getSettings(),
+            defaultSettings: this.getDefaultSettings(),
+            context: this.getContext(),
+            settingsScope: this.settingsScope
+        });
+        
+
+        this._appSettings.on('cancel', this._hideSettings, this);
+        this._appSettings.on('save', this._onSettingsSaved, this);
+
+        this.hide();
+        this.up().add(this._appSettings);
+
+        return this._appSettings;
     }
 });
