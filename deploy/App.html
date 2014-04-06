@@ -3,11 +3,11 @@
 <head>
     <title>Rollup Tree Grid</title>
     <!--  (c) 2014 Rally Software Development Corp.  All Rights Reserved. -->
-    <!--  Build Date: Sat Apr 05 2014 19:13:24 GMT-0700 (PDT) -->
+    <!--  Build Date: Sun Apr 06 2014 14:59:41 GMT-0700 (PDT) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Sat Apr 05 2014 19:13:24 GMT-0700 (PDT)";
-        var CHECKSUM = 22831490490;
+        var APP_BUILD_DATE = "Sun Apr 06 2014 14:59:41 GMT-0700 (PDT)";
+        var CHECKSUM = 22835157224;
     </script>
     
     <script type="text/javascript" src="/apps/2.0rc2/sdk.js"></script>
@@ -342,7 +342,7 @@ Ext.define('CustomApp', {
                         pi_data.leaf = true;
                         if ( top_pi.get('Children') && top_pi.get('Children').Count > 0 ) {
                             pi_data.leaf = false;
-                            pi_data.expanded = true;
+                            pi_data.expanded = false;
                             promises.push( me._getChildren(pi_data,pi_paths) );
                         }
                         top_pi_hashes.push(pi_data);
@@ -353,7 +353,7 @@ Ext.define('CustomApp', {
                             var tree_store = Ext.create('Ext.data.TreeStore',{
                                 model: TSTreeModel,
                                 root: {
-                                    expanded: true,
+                                    expanded: false,
                                     children: top_pi_hashes
                                 }
                             });

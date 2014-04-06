@@ -75,7 +75,7 @@ Ext.define('CustomApp', {
                         pi_data.leaf = true;
                         if ( top_pi.get('Children') && top_pi.get('Children').Count > 0 ) {
                             pi_data.leaf = false;
-                            pi_data.expanded = true;
+                            pi_data.expanded = false;
                             promises.push( me._getChildren(pi_data,pi_paths) );
                         }
                         top_pi_hashes.push(pi_data);
@@ -86,7 +86,7 @@ Ext.define('CustomApp', {
                             var tree_store = Ext.create('Ext.data.TreeStore',{
                                 model: TSTreeModel,
                                 root: {
-                                    expanded: true,
+                                    expanded: false,
                                     children: top_pi_hashes
                                 }
                             });
