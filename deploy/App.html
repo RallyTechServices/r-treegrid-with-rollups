@@ -3,11 +3,11 @@
 <head>
     <title>Rollup Tree Grid</title>
     <!--  (c) 2014 Rally Software Development Corp.  All Rights Reserved. -->
-    <!--  Build Date: Tue Apr 01 2014 21:40:21 GMT-0700 (PDT) -->
+    <!--  Build Date: Sat Apr 05 2014 18:30:46 GMT-0700 (PDT) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Tue Apr 01 2014 21:40:21 GMT-0700 (PDT)";
-        var CHECKSUM = 18420253737;
+        var APP_BUILD_DATE = "Sat Apr 05 2014 18:30:46 GMT-0700 (PDT)";
+        var CHECKSUM = 18485459301;
     </script>
     
     <script type="text/javascript" src="/apps/2.0rc2/sdk.js"></script>
@@ -374,6 +374,7 @@ Ext.define('CustomApp', {
                 this._getChildFilterForItem(node_hash,pi_paths)
             ],
             fetch: ['FormattedID','Name','DirectChildrenCount','Children','AcceptedDate','ScheduleState', me.pert_field_name],
+            context: { project: null },
             autoLoad: true,
             listeners: {
                 scope: this,

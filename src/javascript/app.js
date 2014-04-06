@@ -108,6 +108,7 @@ Ext.define('CustomApp', {
                 this._getChildFilterForItem(node_hash,pi_paths)
             ],
             fetch: ['FormattedID','Name','DirectChildrenCount','Children','AcceptedDate','ScheduleState', me.pert_field_name],
+            context: { project: null },
             autoLoad: true,
             listeners: {
                 scope: this,
