@@ -76,6 +76,7 @@ Ext.define('CustomApp', {
                         if ( top_pi.get('Children') && top_pi.get('Children').Count > 0 ) {
                             pi_data.leaf = false;
                             pi_data.expanded = false;
+                            pi_data.__is_top_pi = true;
                             promises.push( me._getChildren(pi_data,pi_paths) );
                         }
                         top_pi_hashes.push(pi_data);
@@ -209,11 +210,15 @@ Ext.define('CustomApp', {
                 dataIndex: '__rollup',
                 text: 'Progress by Original',
                 renderer: function(value,meta_data,record) {
-                    return Ext.create('Rally.technicalservices.ProgressBarTemplate',{
-                        numeratorField: '__accepted_rollup',
-                        denominatorField: '__original_value',
-                        percentDoneName: '__original_value'
-                    }).apply(record.getData());
+                    if ( record.get('__is_top_pi') ) {
+                        return Ext.create('Rally.technicalservices.ProgressBarTemplate',{
+                            numeratorField: '__accepted_rollup',
+                            denominatorField: '__original_value',
+                            percentDoneName: '__original_value'
+                        }).apply(record.getData());
+                    } else {
+                        return "";
+                    }
                     
                 }
             },

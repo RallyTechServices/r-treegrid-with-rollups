@@ -3,11 +3,11 @@
 <head>
     <title>Rollup Tree Grid</title>
     <!--  (c) 2014 Rally Software Development Corp.  All Rights Reserved. -->
-    <!--  Build Date: Sun Apr 06 2014 14:59:41 GMT-0700 (PDT) -->
+    <!--  Build Date: Sun Apr 06 2014 15:13:14 GMT-0700 (PDT) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Sun Apr 06 2014 14:59:41 GMT-0700 (PDT)";
-        var CHECKSUM = 22835157224;
+        var APP_BUILD_DATE = "Sun Apr 06 2014 15:13:14 GMT-0700 (PDT)";
+        var CHECKSUM = 23288607848;
     </script>
     
     <script type="text/javascript" src="/apps/2.0rc2/sdk.js"></script>
@@ -262,7 +262,8 @@ Ext.define('TSTreeModel',{
         { name: '_type', type:'String' },
         { name: '__original_value', type: 'auto' },
         { name: '__rollup', type:'Float' },
-        { name: '__accepted_rollup', type: 'Float' }
+        { name: '__accepted_rollup', type: 'Float' },
+        { name: '__is_top_pi', type: 'Boolean', defaultValue: false }
     ]
 });
 Ext.define('CustomApp', {
@@ -343,6 +344,7 @@ Ext.define('CustomApp', {
                         if ( top_pi.get('Children') && top_pi.get('Children').Count > 0 ) {
                             pi_data.leaf = false;
                             pi_data.expanded = false;
+                            pi_data.__is_top_pi = true;
                             promises.push( me._getChildren(pi_data,pi_paths) );
                         }
                         top_pi_hashes.push(pi_data);
@@ -476,11 +478,15 @@ Ext.define('CustomApp', {
                 dataIndex: '__rollup',
                 text: 'Progress by Original',
                 renderer: function(value,meta_data,record) {
-                    return Ext.create('Rally.technicalservices.ProgressBarTemplate',{
-                        numeratorField: '__accepted_rollup',
-                        denominatorField: '__original_value',
-                        percentDoneName: '__original_value'
-                    }).apply(record.getData());
+                    if ( record.get('__is_top_pi') ) {
+                        return Ext.create('Rally.technicalservices.ProgressBarTemplate',{
+                            numeratorField: '__accepted_rollup',
+                            denominatorField: '__original_value',
+                            percentDoneName: '__original_value'
+                        }).apply(record.getData());
+                    } else {
+                        return "";
+                    }
                     
                 }
             },
