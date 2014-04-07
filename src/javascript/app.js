@@ -100,7 +100,7 @@ Ext.define('CustomApp', {
                     
                 }
             },
-            fetch: ['FormattedID','Name', 'State','Children', this.original_pert_field_name]
+            fetch: ['FormattedID','Name', 'State','Children',this.original_pert_field_name]
         });
     },
     _getChildren:function(node_hash,pi_paths) {
@@ -111,7 +111,7 @@ Ext.define('CustomApp', {
             filters: [
                 this._getChildFilterForItem(node_hash,pi_paths)
             ],
-            fetch: ['FormattedID','Name','DirectChildrenCount','Children','AcceptedDate','ScheduleState', me.pert_field_name],
+            fetch: ['FormattedID','Name','DirectChildrenCount','Children','AcceptedDate','ScheduleState','Defects',me.pert_field_name],
             context: { project: null },
             autoLoad: true,
             listeners: {
@@ -127,12 +127,17 @@ Ext.define('CustomApp', {
 
                         if ( record.get('Children') && record.get('Children').Count > 0 ) {
                             record_data.leaf = false;
-                            record_data.expanded = true;
+                            record_data.expanded = false;
                             promises.push( me._getChildren(record_data,pi_paths) );
                         } else if ( record.get('DirectChildrenCount') && record.get('DirectChildrenCount') > 0)  {
                             record_data.leaf = false;
-                            record_data.expanded = true;
+                            record_data.expanded = false;
                             promises.push( me._getChildren(record_data,pi_paths) );
+                        }
+                        
+                        if ( record.get('Defects') && record.get('Defects').Count > 0 ) {
+                            record_data.leaf = false;
+                            promises.push( me._getDefects(record_data) );
                         }
                         
                         // set value for calculating field
@@ -142,7 +147,12 @@ Ext.define('CustomApp', {
                         }
                         child_hashes.push(record_data);
                     });
-                    node_hash.children = child_hashes;
+                    
+                    if ( !node_hash.children ) {
+                        node_hash.children = [];
+                    }
+                    node_hash.children = Ext.Array.push(node_hash.children,child_hashes);
+                    
                     if ( promises.length > 0 ) {
                         Deft.Promise.all(promises).then({
                             scope: this,
@@ -165,6 +175,54 @@ Ext.define('CustomApp', {
         });
         return deferred.promise;
     },
+    _getDefects:function(node_hash) {
+        var deferred = Ext.create('Deft.Deferred');
+        var me = this;
+        Ext.create('Rally.data.wsapi.Store',{
+            model: 'Defect',
+            filters: [
+                this._getDefectFilterForItem(node_hash)
+            ],
+            fetch: ['FormattedID','Name','AcceptedDate','State', me.pert_field_name],
+            context: { project: null },
+            autoLoad: true,
+            listeners: {
+                scope: this,
+                load: function(store, records) {
+                    var total_rollup = 0;
+                    var child_hashes = [];
+                    Ext.Array.each(records,function(record){
+                        var record_data = record.getData();
+                        record_data.leaf = true;
+                        
+                        // set value for calculating field
+                        record_data.__rollup = record.get(me.pert_field_name);
+                        if ( me._isAccepted(record_data) && me._isClosed(record_data )) {
+                            record_data.__accepted_rollup = record.get(me.pert_field_name);
+                        }
+                        child_hashes.push(record_data);
+                    });
+                    if ( !node_hash.children ) {
+                        node_hash.children = [];
+                    }
+                    node_hash.children = Ext.Array.push(node_hash.children,child_hashes);
+                    
+                    node_hash.__rollup = this._calculateRollup(node_hash,child_hashes,'__rollup');
+                    node_hash.__accepted_rollup = this._calculateRollup(node_hash,child_hashes,'__accepted_rollup');
+                    deferred.resolve();
+                }
+            }
+        });
+        return deferred.promise;
+    },
+    _isClosed: function(record_data) {
+        this.logger.log("_sClosed",record_data.FormattedID,record_data);
+        var closed = false; 
+        if ( record_data.AcceptedDate !== null && record_data.State === "Closed" ) {
+            closed = true;
+        }
+        return closed;
+    },
     _isAccepted: function(record_data) {
         this.logger.log("_isAccepted",record_data.FormattedID,record_data);
         var accepted = false; 
@@ -177,12 +235,27 @@ Ext.define('CustomApp', {
         var me = this;
         // roll up the data
         var total_rollup = 0;
-        
-        //this.logger.log("calculating rollup for ", node_hash.FormattedID, node_hash);
+        /*
+         * when a story has only defects, it might be that we want to add its 
+         * value to the defects' values
+         * but when the defect has children and defects, we want only the children+defects
+         */
+        var original_value = node_hash[field_name] || 0;
+        var has_child_stories = false;
+        this.logger.log("calculating rollup for ", node_hash.FormattedID, node_hash);
         Ext.Array.each(child_hashes,function(child){
             var rollup_value = child[field_name] || 0;
+            me.logger.log(" ----- ", rollup_value);
             total_rollup += rollup_value;
+            if ( child._type === "hierarchicalrequirement" ) {
+                has_child_stories = true;
+            }
         });
+        
+        if ( !has_child_stories ) {
+            total_rollup += original_value;
+        }
+        
         return total_rollup;
     },
     _addTreeGrid: function(tree_store) {
@@ -277,6 +350,11 @@ Ext.define('CustomApp', {
         if ( Ext.Array.indexOf(pi_paths,parent_model) == pi_paths.length - 1 ) {
             child_filter = { property:'PortfolioItem.ObjectID', value: node_hash.ObjectID };
         }
+        
+        return child_filter;
+    },
+    _getDefectFilterForItem: function(node_hash){
+        var child_filter = { property:'Requirement.ObjectID', value: node_hash.ObjectID };
         
         return child_filter;
     },
