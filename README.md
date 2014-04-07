@@ -1,5 +1,17 @@
 #Rollup Tree Grid
 
+## Description
+
+A tree view from top level PI down to story/defect.  You can pick two fields:
+a) one field (from stories and defects) that holds a value to roll up, 
+b) one field (from the PI) that holds an original high level estimate at the
+top PI.
+
+The rollup works this way:  a story with children stories will have its value
+replaced by the sum of the values of the children stories.  A story with 
+only defects will have its own value added to the total values of the defects.
+
+
 ## Development Notes
 
 ### First Load
