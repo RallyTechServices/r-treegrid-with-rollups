@@ -3,11 +3,11 @@
 <head>
     <title>Rollup Tree Grid</title>
     <!--  (c) 2014 Rally Software Development Corp.  All Rights Reserved. -->
-    <!--  Build Date: Sun Apr 06 2014 19:10:10 GMT-0700 (PDT) -->
+    <!--  Build Date: Mon Apr 07 2014 19:49:46 GMT-0700 (PDT) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Sun Apr 06 2014 19:10:10 GMT-0700 (PDT)";
-        var CHECKSUM = 29767393634;
+        var APP_BUILD_DATE = "Mon Apr 07 2014 19:49:46 GMT-0700 (PDT)";
+        var CHECKSUM = 30121693598;
     </script>
     
     <script type="text/javascript" src="/apps/2.0rc2/sdk.js"></script>
@@ -577,11 +577,13 @@ Ext.define('CustomApp', {
             },
             {
                 dataIndex: '__rollup',
-                text: 'Total Rollup'
+                text: 'Total Rollup',
+                renderer: Ext.util.Format.numberRenderer('0.00')
             },
             {
                 dataIndex: '__accepted_rollup',
-                text: 'PERT Completed'
+                text: 'PERT Completed',
+                renderer: Ext.util.Format.numberRenderer('0.00')
             },
             {
                 dataIndex: '__accepted_rollup',
@@ -589,7 +591,7 @@ Ext.define('CustomApp', {
                 renderer: function(value,meta_data,record){
                     var total_rollup = record.get('__rollup') || 0;
                     var accepted_rollup = record.get('__accepted_rollup') || 0;
-                    return total_rollup - accepted_rollup;
+                    return Ext.util.Format.number(total_rollup - accepted_rollup, '0.00');
                 }
             }]
         });

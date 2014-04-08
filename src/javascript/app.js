@@ -309,11 +309,13 @@ Ext.define('CustomApp', {
             },
             {
                 dataIndex: '__rollup',
-                text: 'Total Rollup'
+                text: 'Total Rollup',
+                renderer: Ext.util.Format.numberRenderer('0.00')
             },
             {
                 dataIndex: '__accepted_rollup',
-                text: 'PERT Completed'
+                text: 'PERT Completed',
+                renderer: Ext.util.Format.numberRenderer('0.00')
             },
             {
                 dataIndex: '__accepted_rollup',
@@ -321,7 +323,7 @@ Ext.define('CustomApp', {
                 renderer: function(value,meta_data,record){
                     var total_rollup = record.get('__rollup') || 0;
                     var accepted_rollup = record.get('__accepted_rollup') || 0;
-                    return total_rollup - accepted_rollup;
+                    return Ext.util.Format.number(total_rollup - accepted_rollup, '0.00');
                 }
             }]
         });
