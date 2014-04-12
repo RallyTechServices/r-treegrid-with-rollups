@@ -2,7 +2,8 @@ Ext.define('CustomApp', {
     extend: 'Rally.app.App',
     componentCls: 'app',
     logger: new Rally.technicalservices.Logger(),
-    pert_field_name: 'PERT',
+    calculate_story_field_name: 'PERT',
+    calculate_defect_field_name: 'PERT',
     items: [
         {xtype:'container',itemId:'message_box'},
         {xtype:'container',itemId:'display_box', margin: 5},
@@ -17,25 +18,28 @@ Ext.define('CustomApp', {
         }
     },
     _getData: function() {
-            this._getPortfolioItemNames().then({
-                scope: this,
-                success: function(pi_paths) {
-                    if ( pi_paths.length > 0 ) {
-                        this._getPITreeStore(pi_paths);
-                    }
-                },
-                failure: function(error) {
-                    this.down('#message_box').update(error);
+        this.down('#message_box').update();
+    
+        this._getPortfolioItemNames().then({
+            scope: this,
+            success: function(pi_paths) {
+                if ( pi_paths.length > 0 ) {
+                    this._getPITreeStore(pi_paths);
                 }
-            });
+            },
+            failure: function(error) {
+                this.down('#message_box').update(error);
+            }
+        });
     },
     _getPortfolioItemNames:function() {
         var deferred = Ext.create('Deft.Deferred');
 
-        this.pert_field_name = this.getSetting('pert_field_name');
-        this.original_pert_field_name = this.getSetting('original_pert_field_name');
+        this.calculate_story_field_name = this.getSetting('calculate_story_field_name');
+        this.calculate_defect_field_name = this.getSetting('calculate_defect_field_name');
+        this.calculate_original_field_name = this.getSetting('calculate_original_field_name');
         
-        if ( typeof( this.pert_field_name ) == 'undefined' || typeof(this.original_pert_field_name) == 'undefined' ) {
+        if ( this._needsSettings() ) {
             deferred.reject("Select 'Edit App Settings' from the gear menu to configure fields to use for calculations");
         } else {
             Ext.create('Rally.data.wsapi.Store',{
@@ -56,6 +60,22 @@ Ext.define('CustomApp', {
             });
         }
         return deferred.promise;
+    },
+    _needsSettings: function() {
+        if ( typeof(this.calculate_story_field_name) == 'undefined' ) {
+            this.logger.log("Missing field on story" ) ;
+            return true;
+        }
+        if ( typeof(this.calculate_defect_field_name) == 'undefined' ) {
+            this.logger.log("Missing field on defect");
+            return true;
+        } 
+        if ( typeof(this.calculate_original_field_name) == 'undefined' ) {
+            this.logger.log("Missing original value field");
+            return true;
+        } 
+        return false;
+  
     },
     _mask: function(message){
         this.logger.log("Mask: ", message, this.sparkler);
@@ -81,7 +101,7 @@ Ext.define('CustomApp', {
                     var promises = [];
                     Ext.Array.each(top_pis,function(top_pi){
                         var pi_data = top_pi.getData();
-                        pi_data.__original_value = top_pi.get(me.original_pert_field_name);
+                        pi_data.__original_value = top_pi.get(me.calculate_original_field_name);
                         pi_data.leaf = true;
                         if ( top_pi.get('Children') && top_pi.get('Children').Count > 0 ) {
                             pi_data.leaf = false;
@@ -111,7 +131,7 @@ Ext.define('CustomApp', {
                     
                 }
             },
-            fetch: ['FormattedID','Name', 'State','Children',this.original_pert_field_name]
+            fetch: ['FormattedID','Name', 'State','Children',this.calculate_original_field_name]
         });
     },
     _getChildren:function(node_hash,pi_paths) {
@@ -123,7 +143,7 @@ Ext.define('CustomApp', {
             filters: [
                 this._getChildFilterForItem(node_hash,pi_paths)
             ],
-            fetch: ['FormattedID','Name','DirectChildrenCount','Children','AcceptedDate','ScheduleState','Defects',me.pert_field_name],
+            fetch: ['FormattedID','Name','DirectChildrenCount','Children','AcceptedDate','ScheduleState','Defects',me.calculate_story_field_name],
             context: { project: null },
             autoLoad: true,
             listeners: {
@@ -132,7 +152,6 @@ Ext.define('CustomApp', {
                     var child_hashes = [];
                     var promises = [];
                     var total_rollup = 0;
-                    
                     Ext.Array.each(records,function(record){
                         var record_data = record.getData();
                         record_data.leaf = true;
@@ -153,9 +172,9 @@ Ext.define('CustomApp', {
                         }
                         
                         // set value for calculating field
-                        record_data.__rollup = record.get(me.pert_field_name);
+                        record_data.__rollup = record.get(me.calculate_story_field_name);
                         if ( me._isAccepted(record_data) ) {
-                            record_data.__accepted_rollup = record.get(me.pert_field_name);
+                            record_data.__accepted_rollup = record.get(me.calculate_story_field_name);
                         }
                         child_hashes.push(record_data);
                     });
@@ -195,7 +214,7 @@ Ext.define('CustomApp', {
             filters: [
                 this._getDefectFilterForItem(node_hash)
             ],
-            fetch: ['FormattedID','Name','AcceptedDate','State', me.pert_field_name],
+            fetch: ['FormattedID','Name','AcceptedDate','State', me.calculate_defect_field_name],
             context: { project: null },
             autoLoad: true,
             listeners: {
@@ -208,9 +227,10 @@ Ext.define('CustomApp', {
                         record_data.leaf = true;
                         
                         // set value for calculating field
-                        record_data.__rollup = record.get(me.pert_field_name);
+                        record_data.__rollup = record.get(me.calculate_defect_field_name);
+                        me.logger.log("DEFECT ", me.calculate_defect_field_name, record);
                         if ( me._isAccepted(record_data) && me._isClosed(record_data )) {
-                            record_data.__accepted_rollup = record.get(me.pert_field_name);
+                            record_data.__accepted_rollup = record.get(me.calculate_defect_field_name);
                         }
                         child_hashes.push(record_data);
                     });
@@ -228,7 +248,6 @@ Ext.define('CustomApp', {
         return deferred.promise;
     },
     _isClosed: function(record_data) {
-        this.logger.log("_sClosed",record_data.FormattedID,record_data);
         var closed = false; 
         if ( record_data.AcceptedDate !== null && record_data.State === "Closed" ) {
             closed = true;
@@ -236,7 +255,6 @@ Ext.define('CustomApp', {
         return closed;
     },
     _isAccepted: function(record_data) {
-        this.logger.log("_isAccepted",record_data.FormattedID,record_data);
         var accepted = false; 
         if ( record_data.AcceptedDate !== null ) {
             accepted = true;
@@ -345,7 +363,6 @@ Ext.define('CustomApp', {
     },
     _nameRenderer: function(value,meta_data,record) {
         var me = this;
-        //me.logger.log("Display ", value, record.get('FormattedID'),record);
         return value + ": " + record.get('Name');
     },
     _getChildModelForItem: function(node_hash,pi_paths){
@@ -396,26 +413,38 @@ Ext.define('CustomApp', {
             return should_show_field;
         };
         
-        return [{
-            name: 'pert_field_name',
-            xtype: 'rallyfieldcombobox',
-            model: 'HierarchicalRequirement',
-            fieldLabel: 'PERT Field',
-            width: 300,
-            labelWidth: 150,
-            _isNotHidden: _chooseOnlyNumberFields,
-            readyEvent: 'ready' //event fired to signify readiness
-        },
-        {
-            name: 'original_pert_field_name',
-            xtype: 'rallyfieldcombobox',
-            model: 'PortfolioItem',
-            fieldLabel: 'Original PERT Field',
-            _isNotHidden: _chooseOnlyNumberFields,
-            width: 300,
-            labelWidth: 150,
-            readyEvent: 'ready' //event fired to signify readiness
-        }];
+        return [
+            {
+                name: 'calculate_original_field_name',
+                xtype: 'rallyfieldcombobox',
+                model: 'PortfolioItem',
+                fieldLabel: 'Original PERT Field',
+                _isNotHidden: _chooseOnlyNumberFields,
+                width: 300,
+                labelWidth: 150,
+                readyEvent: 'ready' //event fired to signify readiness
+            },
+            {
+                name: 'calculate_story_field_name',
+                xtype: 'rallyfieldcombobox',
+                model: 'HierarchicalRequirement',
+                fieldLabel: 'Story PERT Field',
+                width: 300,
+                labelWidth: 150,
+                _isNotHidden: _chooseOnlyNumberFields,
+                readyEvent: 'ready' //event fired to signify readiness
+            },
+            {
+                name: 'calculate_defect_field_name',
+                xtype: 'rallyfieldcombobox',
+                model: 'Defect',
+                fieldLabel: 'Defect PERT Field',
+                width: 300,
+                labelWidth: 150,
+                _isNotHidden: _chooseOnlyNumberFields,
+                readyEvent: 'ready' //event fired to signify readiness
+            }
+        ];
     },
     // ONLY FOR RUNNING EXTERNALLY
     _showExternalSettingsDialog: function(fields){
@@ -451,15 +480,20 @@ Ext.define('CustomApp', {
      * Override so that the settings box fits (shows the buttons)
      */
     showSettings: function(options) {
-        this._appSettings = Ext.create('Rally.app.AppSettings', {
+        console.log("---");
+        console.log("---");
+        console.log("---");
+        console.log(options);
+        
+        this._appSettings = Ext.create('Rally.app.AppSettings', Ext.apply({
             fields: this.getSettingsFields(),
             settings: this.getSettings(),
             defaultSettings: this.getDefaultSettings(),
             context: this.getContext(),
-            settingsScope: this.settingsScope
-        });
+            settingsScope: this.settingsScope,
+            autoScroll: true
+        }, options));
         
-
         this._appSettings.on('cancel', this._hideSettings, this);
         this._appSettings.on('save', this._onSettingsSaved, this);
 
