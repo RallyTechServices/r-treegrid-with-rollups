@@ -2,8 +2,6 @@ Ext.define('CustomApp', {
     extend: 'Rally.app.App',
     componentCls: 'app',
     logger: new Rally.technicalservices.Logger(),
-    calculate_story_field_name: 'PERT',
-    calculate_defect_field_name: 'PERT',
     items: [
         {xtype:'container',itemId:'message_box'},
         {xtype:'container',itemId:'display_box', margin: 5},
@@ -38,6 +36,7 @@ Ext.define('CustomApp', {
         this.calculate_story_field_name = this.getSetting('calculate_story_field_name');
         this.calculate_defect_field_name = this.getSetting('calculate_defect_field_name');
         this.calculate_original_field_name = this.getSetting('calculate_original_field_name');
+        this.include_defects = this.getSetting('include_defects');
         
         if ( this._needsSettings() ) {
             deferred.reject("Select 'Edit App Settings' from the gear menu to configure fields to use for calculations");
@@ -166,7 +165,7 @@ Ext.define('CustomApp', {
                             promises.push( me._getChildren(record_data,pi_paths) );
                         }
                         
-                        if ( record.get('Defects') && record.get('Defects').Count > 0 ) {
+                        if ( me.include_defects && record.get('Defects') && record.get('Defects').Count > 0 ) {
                             record_data.leaf = false;
                             promises.push( me._getDefects(record_data) );
                         }
@@ -443,6 +442,15 @@ Ext.define('CustomApp', {
                 labelWidth: 150,
                 _isNotHidden: _chooseOnlyNumberFields,
                 readyEvent: 'ready' //event fired to signify readiness
+            },
+            {
+                name: 'include_defects',
+                xtype: 'rallycheckboxfield',
+                fieldLabel: 'Show Defects',
+                width: 300,
+                labelWidth: 150,
+                value: true,
+                readEvent: 'ready'
             }
         ];
     },
@@ -479,12 +487,7 @@ Ext.define('CustomApp', {
     /*
      * Override so that the settings box fits (shows the buttons)
      */
-    showSettings: function(options) {
-        console.log("---");
-        console.log("---");
-        console.log("---");
-        console.log(options);
-        
+    showSettings: function(options) {        
         this._appSettings = Ext.create('Rally.app.AppSettings', Ext.apply({
             fields: this.getSettingsFields(),
             settings: this.getSettings(),
