@@ -378,12 +378,16 @@ Ext.define('CustomApp', {
     getSettingsFields: function() {
         var _chooseOnlyNumberFields = function(field){
             var should_show_field = true;
+            var forbidden_fields = ['FormattedID','ObjectID'];
             if ( field.hidden ) {
                 should_show_field = false;
             }
             if ( field.attributeDefinition ) {
                 var type = field.attributeDefinition.AttributeType;
                 if ( type != "QUANTITY" && type != "INTEGER" && type != "DECIMAL"  ) {
+                    should_show_field = false;
+                }
+                if ( Ext.Array.indexOf(forbidden_fields,field.name) > -1 ) {
                     should_show_field = false;
                 }
             } else {
