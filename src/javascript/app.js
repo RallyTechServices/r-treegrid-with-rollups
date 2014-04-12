@@ -57,9 +57,20 @@ Ext.define('CustomApp', {
         }
         return deferred.promise;
     },
+    _mask: function(message){
+        this.logger.log("Mask: ", message, this.sparkler);
+        if ( this.sparkler ) { this.sparkler.destroy(); }
+        this.sparkler = new Ext.LoadMask(this, {msg:message});  
+        this.sparkler.show();
+    },
+    _unmask: function() {
+        if ( this.sparkler ) { this.sparkler.hide(); }
+    },
     _getPITreeStore: function(pi_paths) {
         var me = this;
         this.logger.log("_getPITreeStore",pi_paths);
+        this._mask("Gathering Portfolio Item data...");
+        
         Ext.create('Rally.data.wsapi.Store', {
             model: pi_paths[0],
             autoLoad: true,
@@ -68,7 +79,6 @@ Ext.define('CustomApp', {
                 load: function(store, top_pis, success) {
                     var top_pi_hashes = [];
                     var promises = [];
-                    
                     Ext.Array.each(top_pis,function(top_pi){
                         var pi_data = top_pi.getData();
                         pi_data.__original_value = top_pi.get(me.original_pert_field_name);
@@ -84,6 +94,7 @@ Ext.define('CustomApp', {
                     Deft.Promise.all(promises).then({
                         scope: this,
                         success: function(node_hashes){
+                            this._mask("Structuring Data into Tree...");
                             var tree_store = Ext.create('Ext.data.TreeStore',{
                                 model: TSTreeModel,
                                 root: {
@@ -106,6 +117,7 @@ Ext.define('CustomApp', {
     _getChildren:function(node_hash,pi_paths) {
         var deferred = Ext.create('Deft.Deferred');
         var me = this;
+        this._mask("Gathering Descendant Information...");
         Ext.create('Rally.data.wsapi.Store',{
             model: this._getChildModelForItem(node_hash,pi_paths),
             filters: [
@@ -233,6 +245,7 @@ Ext.define('CustomApp', {
     },
     _calculateRollup: function(node_hash,child_hashes,field_name) {
         var me = this;
+        this._mask("Calculating Rollup...");
         // roll up the data
         var total_rollup = 0;
         /*
@@ -260,6 +273,8 @@ Ext.define('CustomApp', {
     },
     _addTreeGrid: function(tree_store) {
         var me = this;
+        this._unmask();
+        
         var name_renderer = function(value,meta_data,record) {
             return me._nameRenderer(value,meta_data,record);
         }
@@ -432,13 +447,6 @@ Ext.define('CustomApp', {
      * Override so that the settings box fits (shows the buttons)
      */
     showSettings: function(options) {
-//        this._appSettings = Ext.create('Rally.app.AppSettings', Ext.apply({
-//            fields: this.getSettingsFields(),
-//            settings: this.getSettings(),
-//            defaultSettings: this.getDefaultSettings(),
-//            context: this.getContext(),
-//            settingsScope: this.settingsScope
-//        }, options));
         this._appSettings = Ext.create('Rally.app.AppSettings', {
             fields: this.getSettingsFields(),
             settings: this.getSettings(),
