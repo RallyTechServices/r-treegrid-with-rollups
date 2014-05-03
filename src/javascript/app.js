@@ -302,18 +302,18 @@ Ext.define('CustomApp', {
             rootVisible: false,
             columns: [{
                 xtype: 'treecolumn',
-                text: '',
+                text: ' ',
                 dataIndex: 'FormattedID',
                 renderer: name_renderer,
                 flex: 2
             },
             {
                 dataIndex: '__original_value',
-                text: 'Original PERT'
+                text: TSGlobals.original_pert_header
             },
             {
                 dataIndex: '__rollup',
-                text: 'Progress by Original',
+                text: TSGlobals.progress_by_original_header,
                 renderer: function(value,meta_data,record) {
                     if ( record.get('__is_top_pi') ) {
                         return Ext.create('Rally.technicalservices.ProgressBarTemplate',{
@@ -329,7 +329,7 @@ Ext.define('CustomApp', {
             },
             {
                 dataIndex: '__rollup',
-                text: 'Progress by Rollup',
+                text: TSGlobals.progress_by_rollup_header,
                 renderer: function(value,meta_data,record) {
                     return Ext.create('Rally.technicalservices.ProgressBarTemplate',{
                         numeratorField: '__accepted_rollup',
@@ -341,17 +341,17 @@ Ext.define('CustomApp', {
             },
             {
                 dataIndex: '__rollup',
-                text: 'Total Rollup',
+                text: TSGlobals.total_rollup_header,
                 renderer: Ext.util.Format.numberRenderer('0.00')
             },
             {
                 dataIndex: '__accepted_rollup',
-                text: 'PERT Completed',
+                text: TSGlobals.pert_completed_header,
                 renderer: Ext.util.Format.numberRenderer('0.00')
             },
             {
                 dataIndex: '__accepted_rollup',
-                text: 'Pert Remaining',
+                text: TSGlobals.pert_remaining_header,
                 renderer: function(value,meta_data,record){
                     var total_rollup = record.get('__rollup') || 0;
                     var accepted_rollup = record.get('__accepted_rollup') || 0;
