@@ -3,11 +3,11 @@
 <head>
     <title>Rollup Tree Grid</title>
     <!--  (c) 2014 Rally Software Development Corp.  All Rights Reserved. -->
-    <!--  Build Date: Sat May 03 2014 16:10:53 GMT-0700 (PDT) -->
+    <!--  Build Date: Sat May 03 2014 16:56:00 GMT-0700 (PDT) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Sat May 03 2014 16:10:53 GMT-0700 (PDT)";
-        var CHECKSUM = 35009454565;
+        var APP_BUILD_DATE = "Sat May 03 2014 16:56:00 GMT-0700 (PDT)";
+        var CHECKSUM = 38100075985;
     </script>
     
     <script type="text/javascript" src="/apps/2.0rc2/sdk.js"></script>
@@ -183,7 +183,39 @@ Ext.define('Rally.technicalservices.ProgressBarTemplate', {
          * A function that returns the color for the percent done bar in hex
          */
         calculateColorFn: function(recordData) {
-            return '#58FAAC';
+            console.log("           calculateColorFn", recordData);
+            
+            var numerator = recordData[this.config.numeratorField] || 0;
+            var denominator = recordData[this.config.denominatorField] || 0;
+            
+            console.log( "numerator ", numerator);
+            console.log( "denominator ", denominator);
+            var percentDone = 0;
+            
+            if ( denominator > 0 ) {
+                percentDone = numerator / denominator;
+            }
+                
+            console.log("  Percent Done: ", percentDone);
+            
+            var color = '#cff';
+            var start_date = recordData['PlannedStartDate'] ;
+            if ( start_date === null ) { 
+                start_date = new Date();
+            }
+            var end_date = recordData['PlannedEndDate'];
+            
+            if ( end_date !== null ) {
+                var color = Rally.util.HealthColorCalculator.calculateHealthColor({
+                    startDate: start_date,
+                    endDate: end_date,
+                    asOfDate: new Date(),
+                    percentComplete: percentDone
+                }).hex;
+            }
+            
+            console.log('color:',color);
+            return color;
         },
 
         /**
@@ -268,6 +300,8 @@ Ext.define('TSTreeModel',{
         { name: 'FormattedID', type: 'String' },
         { name: 'Name', type:'String' },
         { name: 'ScheduleState', type:'String' },
+        { name: 'PlannedStartDate', type: 'Date' },
+        { name: 'PlannedEndDate', type: 'Date' },
         { name: '_type', type:'String' },
         { name: '__original_value', type: 'auto' },
         { name: '__rollup', type:'Float' },
@@ -407,7 +441,7 @@ Ext.define('CustomApp', {
                     
                 }
             },
-            fetch: ['FormattedID','Name', 'State','Children',this.calculate_original_field_name]
+            fetch: ['FormattedID','Name', 'State','Children',this.calculate_original_field_name,'PlannedStartDate','PlannedEndDate']
         });
     },
     _getChildren:function(node_hash,pi_paths) {

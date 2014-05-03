@@ -35,7 +35,39 @@ Ext.define('Rally.technicalservices.ProgressBarTemplate', {
          * A function that returns the color for the percent done bar in hex
          */
         calculateColorFn: function(recordData) {
-            return '#58FAAC';
+            console.log("           calculateColorFn", recordData);
+            
+            var numerator = recordData[this.config.numeratorField] || 0;
+            var denominator = recordData[this.config.denominatorField] || 0;
+            
+            console.log( "numerator ", numerator);
+            console.log( "denominator ", denominator);
+            var percentDone = 0;
+            
+            if ( denominator > 0 ) {
+                percentDone = numerator / denominator;
+            }
+                
+            console.log("  Percent Done: ", percentDone);
+            
+            var color = '#cff';
+            var start_date = recordData['PlannedStartDate'] ;
+            if ( start_date === null ) { 
+                start_date = new Date();
+            }
+            var end_date = recordData['PlannedEndDate'];
+            
+            if ( end_date !== null ) {
+                var color = Rally.util.HealthColorCalculator.calculateHealthColor({
+                    startDate: start_date,
+                    endDate: end_date,
+                    asOfDate: new Date(),
+                    percentComplete: percentDone
+                }).hex;
+            }
+            
+            console.log('color:',color);
+            return color;
         },
 
         /**

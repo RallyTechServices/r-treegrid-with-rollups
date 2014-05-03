@@ -130,7 +130,7 @@ Ext.define('CustomApp', {
                     
                 }
             },
-            fetch: ['FormattedID','Name', 'State','Children',this.calculate_original_field_name]
+            fetch: ['FormattedID','Name', 'State','Children',this.calculate_original_field_name,'PlannedStartDate','PlannedEndDate']
         });
     },
     _getChildren:function(node_hash,pi_paths) {
