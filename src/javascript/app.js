@@ -77,13 +77,31 @@ Ext.define('CustomApp', {
   
     },
     _mask: function(message){
-        this.logger.log("Mask: ", message, this.sparkler);
+        this.logger.log("Mask: ", message);
         if ( this.sparkler ) { this.sparkler.destroy(); }
         this.sparkler = new Ext.LoadMask(this, {msg:message});  
         this.sparkler.show();
     },
     _unmask: function() {
         if ( this.sparkler ) { this.sparkler.hide(); }
+    },
+    _getFieldsToFetch: function() {
+        var fields_to_fetch =  ['FormattedID','Name', 'State','Children',this.calculate_original_field_name,'PlannedStartDate','PlannedEndDate'];
+        
+        var additional_fields = this.getSetting('additional_fields_for_pis');
+        if ( typeof(additional_fields) == "string" ) {
+            additional_fields = additional_fields.split(',');
+        }
+        
+        Ext.Array.each(additional_fields, function(field) {
+            
+            if ( typeof(field) == 'object' ) {
+                fields_to_fetch.push(field.get('name'));
+            } else {
+                fields_to_fetch.push(field);
+            }
+        });
+        return fields_to_fetch;
     },
     _getPITreeStore: function(pi_paths) {
         var me = this;
@@ -110,12 +128,37 @@ Ext.define('CustomApp', {
                         }
                         top_pi_hashes.push(pi_data);
                     });
+                    
+                    
+                    // extend the model to add additional fields
+                    var additional_fields = this.getSetting('additional_fields_for_pis');
+                    if ( typeof(additional_fields) == "string" ) {
+                        additional_fields = additional_fields.split(',');
+                    }
+                    
+                    var fields = [];
+                    Ext.Array.each(additional_fields, function(field) {
+                        
+                        if ( typeof(field) == 'object' ) {
+                            fields.push(field.get('name'));
+                        } else {
+                            fields.push(field);
+                        }
+                    });
+                        
+                    var model = {
+                        extend: 'TSTreeModel',
+                        fields: fields
+                    };
+                    
+                    Ext.define('TSTreeModelWithAdditions', model);
+                    
                     Deft.Promise.all(promises).then({
                         scope: this,
                         success: function(node_hashes){
                             this._mask("Structuring Data into Tree...");
                             var tree_store = Ext.create('Ext.data.TreeStore',{
-                                model: TSTreeModel,
+                                model: TSTreeModelWithAdditions,
                                 root: {
                                     expanded: false,
                                     children: top_pi_hashes
@@ -130,7 +173,7 @@ Ext.define('CustomApp', {
                     
                 }
             },
-            fetch: ['FormattedID','Name', 'State','Children',this.calculate_original_field_name,'PlannedStartDate','PlannedEndDate']
+            fetch:me._getFieldsToFetch()
         });
     },
     _getChildren:function(node_hash,pi_paths) {
@@ -288,26 +331,15 @@ Ext.define('CustomApp', {
         
         return total_rollup;
     },
-    _addTreeGrid: function(tree_store) {
-        this.logger.log("creating TreeGrid");
+    _getColumns: function() {
         var me = this;
-        this._unmask();
         
         var name_renderer = function(value,meta_data,record) {
             return me._nameRenderer(value,meta_data,record);
         }
         
-        var pi_tree = this.down('#display_box').add({
-            xtype:'treepanel',
-            store: tree_store,
-            cls: 'rally-grid',
-            rootVisible: false,
-            enableColumnMove: false,
-            listeners: {
-                scope: this,
-                columnresize: this._saveColumnSizes
-            },
-            columns: [{
+        var columns = [
+            {
                 xtype: 'treecolumn',
                 text: ' ',
                 dataIndex: 'FormattedID',
@@ -391,7 +423,48 @@ Ext.define('CustomApp', {
                     return Ext.util.Format.number(value, '0.00');
                 },
                 menuDisabled: true
-            }]
+            }];
+        
+        var additional_fields = this.getSetting('additional_fields_for_pis');
+        if ( typeof(additional_fields) == "string" ) {
+            additional_fields = additional_fields.split(',');
+        }
+        Ext.Array.each( additional_fields, function(additional_field){
+            var column_header = additional_field;
+            var column_index = additional_field;
+            
+            if ( typeof(additional_field) == 'object' ) {
+                column_header = additional_field.get('displayName');
+                column_index = additional_field.get('name');
+            } 
+            var additional_column = {
+                dataIndex: column_index,
+                text: column_header,
+                itemId:column_index + '_column',
+                width: me.getSetting(column_index + '_column') || 100,
+                menuDisabled: true
+            };
+            columns.push(additional_column);
+        });
+        me.logger.log("Making Columns ", columns);
+        return columns;
+    },
+    _addTreeGrid: function(tree_store) {
+        this.logger.log("creating TreeGrid");
+        var me = this;
+        this._unmask();
+        
+        var pi_tree = this.down('#display_box').add({
+            xtype:'treepanel',
+            store: tree_store,
+            cls: 'rally-grid',
+            rootVisible: false,
+            enableColumnMove: false,
+            listeners: {
+                scope: this,
+                columnresize: this._saveColumnSizes
+            },
+            columns: this._getColumns()
         });
     },
     _saveColumnSizes: function(header_container,column,width){
@@ -455,6 +528,25 @@ Ext.define('CustomApp', {
             return should_show_field;
         };
         
+        var _ignoreTextFields = function(field){
+            var should_show_field = true;
+            var forbidden_fields = ['FormattedID','ObjectID','DragAndDropRank','Name'];
+            if ( field.hidden ) {
+                should_show_field = false;
+            }
+            if ( field.attributeDefinition ) {
+                var type = field.attributeDefinition.AttributeType;
+                if ( type == "TEXT" || type == "OBJECT" || type == "COLLECTION" ) {
+                    should_show_field = false;
+                }
+                if ( Ext.Array.indexOf(forbidden_fields,field.name) > -1 ) {
+                    should_show_field = false;
+                }
+            } else {
+                should_show_field = false;
+            }
+            return should_show_field;
+        };
         return [
             {
                 name: 'calculate_original_field_name',
@@ -494,6 +586,21 @@ Ext.define('CustomApp', {
                 labelWidth: 150,
                 value: true,
                 readEvent: 'ready'
+            },
+            {
+                name: 'additional_fields_for_pis',
+                xtype: 'rallyfieldpicker',
+                modelTypes: ['PortfolioItem'],
+                fieldLabel: 'Additional fields for Portfolio Items:',
+                _shouldShowField: _ignoreTextFields,
+                width: 300,
+                alwaysExpanded: false,
+                autoExpand: true,
+                labelWidth: 150,
+                listeners: {
+                    ready: function(picker){ picker.collapse(); }
+                },
+                readyEvent: 'ready' //event fired to signify readiness
             }
         ];
     },
