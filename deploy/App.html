@@ -3,11 +3,11 @@
 <head>
     <title>Rollup Tree Grid</title>
     <!--  (c) 2014 Rally Software Development Corp.  All Rights Reserved. -->
-    <!--  Build Date: Sat May 03 2014 17:28:27 GMT-0700 (PDT) -->
+    <!--  Build Date: Sat May 03 2014 19:53:34 GMT-0700 (PDT) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Sat May 03 2014 17:28:27 GMT-0700 (PDT)";
-        var CHECKSUM = 41956757879;
+        var APP_BUILD_DATE = "Sat May 03 2014 19:53:34 GMT-0700 (PDT)";
+        var CHECKSUM = 55207959634;
     </script>
     
     <script type="text/javascript" src="/apps/2.0rc2/sdk.js"></script>
@@ -287,6 +287,40 @@ Ext.define('Rally.technicalservices.ProgressBarTemplate', {
 
     }
 });
+
+var convertDelta = function(value,record) {
+    var done = record.get('__accepted_rollup') || 0;
+    var original = record.get('__original_value') || 0;
+    var delta = done - original;
+    return delta;
+};
+var convertRemaining = function(value,record) {
+    var done = record.get('__accepted_rollup') || 0;
+    var total = record.get('__rollup') || 0;
+    var delta = total-done;
+    return delta;
+};
+
+var convertProgressByOriginal = function(value,record) {
+    var numerator = record.get('__accepted_rollup') || 0;
+    var denominator = record.get('__original_value') || 0;
+    var percentDone = 0;
+    if ( denominator > 0 ) {
+        percentDone = numerator / denominator;
+    }
+    return percentDone;
+};
+
+var convertProgressByRollup = function(value,record) {
+    var numerator = record.get('__accepted_rollup') || 0;
+    var denominator = record.get('__rollup') || 0;
+    var percentDone = 0;
+    if ( denominator > 0 ) {
+        percentDone = numerator / denominator;
+    }
+    return percentDone;
+};
+
 Ext.define('TSTreeModel',{
     extend: 'Ext.data.Model',
     fields: [
@@ -299,9 +333,107 @@ Ext.define('TSTreeModel',{
         { name: '__original_value', type: 'auto' },
         { name: '__rollup', type:'Float' },
         { name: '__accepted_rollup', type: 'Float' },
-        { name: '__pert_delta', type: 'Float' },
+        { name: '__calculated_delta', type: 'Float', convert: convertDelta },
+        { name: '__calculated_remaining', type:'Float', convert: convertRemaining },
+        { name: '__progress_by_original', type: 'Float', convert: convertProgressByOriginal },
+        { name: '__progress_by_rollup', type: 'Float', convert: convertProgressByRollup },
         { name: '__is_top_pi', type: 'Boolean', defaultValue: false }
-    ]
+    ],
+    set: function (fieldName, newValue) {
+        var me = this,
+            data = me[me.persistenceProperty],
+            fields = me.fields,
+            modified = me.modified,
+            single = (typeof fieldName == 'string'),
+            currentValue, field, idChanged, key, modifiedFieldNames, name, oldId,
+            newId, value, values;
+
+        if (single) {
+            values = me._singleProp;
+            values[fieldName] = newValue;
+        } else {
+            values = fieldName;
+        }
+
+        for (name in values) {
+            if (values.hasOwnProperty(name)) {
+                value = values[name];
+
+                if (fields && (field = fields.get(name)) && field.convert) {
+                    value = field.convert(value, me);
+                }
+
+                currentValue = data[name];
+                if (me.isEqual(currentValue, value)) {
+                    continue; // new value is the same, so no change...
+                }
+
+                data[name] = value;
+                (modifiedFieldNames || (modifiedFieldNames = [])).push(name);
+
+                if (field && field.persist) {
+                    if (modified.hasOwnProperty(name)) {
+                        if (me.isEqual(modified[name], value)) {
+                            // The original value in me.modified equals the new value, so
+                            // the field is no longer modified:
+                            delete modified[name];
+
+                            // We might have removed the last modified field, so check to
+                            // see if there are any modified fields remaining and correct
+                            // me.dirty:
+                            me.dirty = false;
+                            for (key in modified) {
+                                if (modified.hasOwnProperty(key)){
+                                    me.dirty = true;
+                                    break;
+                                }
+                            }
+                        }
+                    } else {
+                        me.dirty = true;
+                        modified[name] = currentValue;
+                        /* 
+                         * Overridden here to recalculate the delta
+                         */
+                        if ( name == "__accepted_rollup" || name == "__original_value" ) {
+                            var done = this.get('__accepted_rollup') || 0;
+                            var original = this.get('__original_value') || 0;
+                            var delta = done - original;
+                            modifiedFieldNames.push( this.set("__calculated_delta", delta));
+                        }
+                        if ( name == "__accepted_rollup" || name == "__rollup" ) {
+                            var done = this.get('__accepted_rollup') || 0;
+                            var total = this.get('__rollup') || 0;
+                            var delta = total-done;
+                            modifiedFieldNames.push( this.set("__calculated_remaining", delta));
+                        }
+                    }
+                }
+
+                if (name == me.idProperty) {
+                    idChanged = true;
+                    oldId = currentValue;
+                    newId = value;
+                }
+            }
+        }
+
+        if (single) {
+            // cleanup our reused object for next time... important to do this before
+            // we fire any events or call anyone else (like afterEdit)!
+            delete values[fieldName];
+        }
+
+        if (idChanged) {
+            me.fireEvent('idchanged', me, oldId, newId);
+        }
+
+        if (!me.editing && modifiedFieldNames) {
+            me.afterEdit(modifiedFieldNames);
+        }
+
+        return modifiedFieldNames || null;
+    }
 });
 Ext.define('CustomApp', {
     extend: 'Rally.app.App',
@@ -594,6 +726,7 @@ Ext.define('CustomApp', {
         return total_rollup;
     },
     _addTreeGrid: function(tree_store) {
+        this.logger.log("creating TreeGrid");
         var me = this;
         this._unmask();
         
@@ -604,7 +737,9 @@ Ext.define('CustomApp', {
         var pi_tree = this.down('#display_box').add({
             xtype:'treepanel',
             store: tree_store,
+            cls: 'rally-grid',
             rootVisible: false,
+            enableColumnMove: false,
             listeners: {
                 scope: this,
                 columnresize: this._saveColumnSizes
@@ -621,10 +756,11 @@ Ext.define('CustomApp', {
                 dataIndex: '__original_value',
                 text: TSGlobals.original_pert_header,
                 itemId:'original_pert_column',
-                width: this.getSetting('original_pert_column') || 100
+                width: this.getSetting('original_pert_column') || 100,
+                menuDisabled: true
             },
             {
-                dataIndex: '__rollup',
+                dataIndex: '__progress_by_original',
                 text: TSGlobals.progress_by_original_header,
                 itemId: 'progress_by_original_column',
                 width: this.getSetting('progress_by_original_column') || 100,
@@ -639,10 +775,11 @@ Ext.define('CustomApp', {
                         return "";
                     }
                     
-                }
+                },
+                menuDisabled: true
             },
             {
-                dataIndex: '__rollup',
+                dataIndex: '__progress_by_rollup',
                 text: TSGlobals.progress_by_rollup_header,
                 itemId: 'progress_rollup_column',
                 width: this.getSetting('progress_rollup_column') || 100,
@@ -653,43 +790,44 @@ Ext.define('CustomApp', {
                         percentDoneName: '__rollup'
                     }).apply(record.getData());
                     
-                }
+                },
+                menuDisabled: true
             },
             {
                 dataIndex: '__rollup',
                 text: TSGlobals.total_rollup_header,
                 itemId:'total_rollup_column',
                 width: this.getSetting('total_rollup_column') || 100,
-                renderer: Ext.util.Format.numberRenderer('0.00')
+                renderer: Ext.util.Format.numberRenderer('0.00'),
+                menuDisabled: true
             },
             {
                 dataIndex: '__accepted_rollup',
                 text: TSGlobals.pert_completed_header,
                 itemId:'pert_completed_column',
                 width: this.getSetting('pert_completed_column') || 100,
-                renderer: Ext.util.Format.numberRenderer('0.00')
+                renderer: Ext.util.Format.numberRenderer('0.00'),
+                menuDisabled: true
             },
             {
-                dataIndex: '__accepted_rollup',
+                dataIndex: '__calculated_remaining',
                 text: TSGlobals.pert_remaining_header,
                 itemId:'pert_remaining_column',
                 width: this.getSetting('pert_remaining_column') || 100,
                 renderer: function(value,meta_data,record){
-                    var total_rollup = record.get('__rollup') || 0;
-                    var accepted_rollup = record.get('__accepted_rollup') || 0;
-                    return Ext.util.Format.number(total_rollup - accepted_rollup, '0.00');
-                }
+                    return Ext.util.Format.number(value, '0.00');
+                },
+                menuDisabled: true
             },
             {
-                dataIndex: '__accepted_rollup',
+                dataIndex: '__calculated_delta',
                 text: TSGlobals.delta_header,
                 itemId:'delta_column',
                 width: this.getSetting('delta_column') || 100,
                 renderer: function(value,meta_data,record){
-                    var original_value = record.get('__original_value') || 0;
-                    var accepted_value = record.get('__accepted_rollup') || 0;
-                    return Ext.util.Format.number(accepted_value - original_value, '0.00');
-                }
+                    return Ext.util.Format.number(value, '0.00');
+                },
+                menuDisabled: true
             }]
         });
     },

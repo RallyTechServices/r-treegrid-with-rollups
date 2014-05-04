@@ -289,6 +289,7 @@ Ext.define('CustomApp', {
         return total_rollup;
     },
     _addTreeGrid: function(tree_store) {
+        this.logger.log("creating TreeGrid");
         var me = this;
         this._unmask();
         
@@ -299,7 +300,9 @@ Ext.define('CustomApp', {
         var pi_tree = this.down('#display_box').add({
             xtype:'treepanel',
             store: tree_store,
+            cls: 'rally-grid',
             rootVisible: false,
+            enableColumnMove: false,
             listeners: {
                 scope: this,
                 columnresize: this._saveColumnSizes
@@ -316,10 +319,11 @@ Ext.define('CustomApp', {
                 dataIndex: '__original_value',
                 text: TSGlobals.original_pert_header,
                 itemId:'original_pert_column',
-                width: this.getSetting('original_pert_column') || 100
+                width: this.getSetting('original_pert_column') || 100,
+                menuDisabled: true
             },
             {
-                dataIndex: '__rollup',
+                dataIndex: '__progress_by_original',
                 text: TSGlobals.progress_by_original_header,
                 itemId: 'progress_by_original_column',
                 width: this.getSetting('progress_by_original_column') || 100,
@@ -334,10 +338,11 @@ Ext.define('CustomApp', {
                         return "";
                     }
                     
-                }
+                },
+                menuDisabled: true
             },
             {
-                dataIndex: '__rollup',
+                dataIndex: '__progress_by_rollup',
                 text: TSGlobals.progress_by_rollup_header,
                 itemId: 'progress_rollup_column',
                 width: this.getSetting('progress_rollup_column') || 100,
@@ -348,43 +353,44 @@ Ext.define('CustomApp', {
                         percentDoneName: '__rollup'
                     }).apply(record.getData());
                     
-                }
+                },
+                menuDisabled: true
             },
             {
                 dataIndex: '__rollup',
                 text: TSGlobals.total_rollup_header,
                 itemId:'total_rollup_column',
                 width: this.getSetting('total_rollup_column') || 100,
-                renderer: Ext.util.Format.numberRenderer('0.00')
+                renderer: Ext.util.Format.numberRenderer('0.00'),
+                menuDisabled: true
             },
             {
                 dataIndex: '__accepted_rollup',
                 text: TSGlobals.pert_completed_header,
                 itemId:'pert_completed_column',
                 width: this.getSetting('pert_completed_column') || 100,
-                renderer: Ext.util.Format.numberRenderer('0.00')
+                renderer: Ext.util.Format.numberRenderer('0.00'),
+                menuDisabled: true
             },
             {
-                dataIndex: '__accepted_rollup',
+                dataIndex: '__calculated_remaining',
                 text: TSGlobals.pert_remaining_header,
                 itemId:'pert_remaining_column',
                 width: this.getSetting('pert_remaining_column') || 100,
                 renderer: function(value,meta_data,record){
-                    var total_rollup = record.get('__rollup') || 0;
-                    var accepted_rollup = record.get('__accepted_rollup') || 0;
-                    return Ext.util.Format.number(total_rollup - accepted_rollup, '0.00');
-                }
+                    return Ext.util.Format.number(value, '0.00');
+                },
+                menuDisabled: true
             },
             {
-                dataIndex: '__accepted_rollup',
+                dataIndex: '__calculated_delta',
                 text: TSGlobals.delta_header,
                 itemId:'delta_column',
                 width: this.getSetting('delta_column') || 100,
                 renderer: function(value,meta_data,record){
-                    var original_value = record.get('__original_value') || 0;
-                    var accepted_value = record.get('__accepted_rollup') || 0;
-                    return Ext.util.Format.number(accepted_value - original_value, '0.00');
-                }
+                    return Ext.util.Format.number(value, '0.00');
+                },
+                menuDisabled: true
             }]
         });
     },
