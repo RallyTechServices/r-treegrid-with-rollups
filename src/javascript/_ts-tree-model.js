@@ -10,6 +10,7 @@ Ext.define('TSTreeModel',{
         { name: '__original_value', type: 'auto' },
         { name: '__rollup', type:'Float' },
         { name: '__accepted_rollup', type: 'Float' },
+        { name: '__pert_delta', type: 'Float' },
         { name: '__is_top_pi', type: 'Boolean', defaultValue: false }
     ]
 });

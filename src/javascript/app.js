@@ -300,20 +300,29 @@ Ext.define('CustomApp', {
             xtype:'treepanel',
             store: tree_store,
             rootVisible: false,
+            listeners: {
+                scope: this,
+                columnresize: this._saveColumnSizes
+            },
             columns: [{
                 xtype: 'treecolumn',
                 text: ' ',
                 dataIndex: 'FormattedID',
+                itemId: 'tree_column',
                 renderer: name_renderer,
-                flex: 2
+                width: this.getSetting('tree_column') || 200
             },
             {
                 dataIndex: '__original_value',
-                text: TSGlobals.original_pert_header
+                text: TSGlobals.original_pert_header,
+                itemId:'original_pert_column',
+                width: this.getSetting('original_pert_column') || 100
             },
             {
                 dataIndex: '__rollup',
                 text: TSGlobals.progress_by_original_header,
+                itemId: 'progress_by_original_column',
+                width: this.getSetting('progress_by_original_column') || 100,
                 renderer: function(value,meta_data,record) {
                     if ( record.get('__is_top_pi') ) {
                         return Ext.create('Rally.technicalservices.ProgressBarTemplate',{
@@ -330,6 +339,8 @@ Ext.define('CustomApp', {
             {
                 dataIndex: '__rollup',
                 text: TSGlobals.progress_by_rollup_header,
+                itemId: 'progress_rollup_column',
+                width: this.getSetting('progress_rollup_column') || 100,
                 renderer: function(value,meta_data,record) {
                     return Ext.create('Rally.technicalservices.ProgressBarTemplate',{
                         numeratorField: '__accepted_rollup',
@@ -342,22 +353,48 @@ Ext.define('CustomApp', {
             {
                 dataIndex: '__rollup',
                 text: TSGlobals.total_rollup_header,
+                itemId:'total_rollup_column',
+                width: this.getSetting('total_rollup_column') || 100,
                 renderer: Ext.util.Format.numberRenderer('0.00')
             },
             {
                 dataIndex: '__accepted_rollup',
                 text: TSGlobals.pert_completed_header,
+                itemId:'pert_completed_column',
+                width: this.getSetting('pert_completed_column') || 100,
                 renderer: Ext.util.Format.numberRenderer('0.00')
             },
             {
                 dataIndex: '__accepted_rollup',
                 text: TSGlobals.pert_remaining_header,
+                itemId:'pert_remaining_column',
+                width: this.getSetting('pert_remaining_column') || 100,
                 renderer: function(value,meta_data,record){
                     var total_rollup = record.get('__rollup') || 0;
                     var accepted_rollup = record.get('__accepted_rollup') || 0;
                     return Ext.util.Format.number(total_rollup - accepted_rollup, '0.00');
                 }
+            },
+            {
+                dataIndex: '__accepted_rollup',
+                text: TSGlobals.delta_header,
+                itemId:'delta_column',
+                width: this.getSetting('delta_column') || 100,
+                renderer: function(value,meta_data,record){
+                    var original_value = record.get('__original_value') || 0;
+                    var accepted_value = record.get('__accepted_rollup') || 0;
+                    return Ext.util.Format.number(accepted_value - original_value, '0.00');
+                }
             }]
+        });
+    },
+    _saveColumnSizes: function(header_container,column,width){
+        this.logger.log("change column size", header_container,column.itemId, width);
+        var settings = {};
+        settings[column.itemId] = width;
+        
+        this.updateSettingsValues({
+            settings: settings
         });
     },
     _nameRenderer: function(value,meta_data,record) {

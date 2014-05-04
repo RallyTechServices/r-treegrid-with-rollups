@@ -5,5 +5,6 @@
     progress_by_rollup_header: 'Progress by Rollup',
     total_rollup_header: 'Total Rollup',
     pert_completed_header: 'PERT Completed',
-    pert_remaining_header: 'Pert Remaining'
+    pert_remaining_header: 'Pert Remaining',
+    delta_header: 'Delta'
  });

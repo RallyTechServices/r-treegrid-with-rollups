@@ -34,22 +34,16 @@ Ext.define('Rally.technicalservices.ProgressBarTemplate', {
          * @cfg {Function} (required)
          * A function that returns the color for the percent done bar in hex
          */
-        calculateColorFn: function(recordData) {
-            console.log("           calculateColorFn", recordData);
-            
+        calculateColorFn: function(recordData) {            
             var numerator = recordData[this.config.numeratorField] || 0;
             var denominator = recordData[this.config.denominatorField] || 0;
             
-            console.log( "numerator ", numerator);
-            console.log( "denominator ", denominator);
             var percentDone = 0;
             
             if ( denominator > 0 ) {
                 percentDone = numerator / denominator;
             }
                 
-            console.log("  Percent Done: ", percentDone);
-            
             var color = '#cff';
             var start_date = recordData['PlannedStartDate'] ;
             if ( start_date === null ) { 
@@ -66,7 +60,6 @@ Ext.define('Rally.technicalservices.ProgressBarTemplate', {
                 }).hex;
             }
             
-            console.log('color:',color);
             return color;
         },
 
@@ -108,7 +101,6 @@ Ext.define('Rally.technicalservices.ProgressBarTemplate', {
             '</tpl>',
             {
                 shouldShowPercentDone: function(recordData) {
-                    console.log(recordData);
                     return true;
                 },
                 getContainerClass: function(recordData) {
