@@ -637,22 +637,51 @@ Ext.define('CustomApp', {
     /*
      * Override so that the settings box fits (shows the buttons)
      */
-    showSettings: function(options) {        
+//    showSettings: function(options) {        
+//        this._appSettings = Ext.create('Rally.app.AppSettings', Ext.apply({
+//            fields: this.getSettingsFields(),
+//            settings: this.getSettings(),
+//            defaultSettings: this.getDefaultSettings(),
+//            context: this.getContext(),
+//            settingsScope: this.settingsScope,
+//            autoScroll: true
+//        }, options));
+//        
+//        this._appSettings.on('cancel', this._hideSettings, this);
+//        this._appSettings.on('save', this._onSettingsSaved, this);
+//
+//        this.hide();
+//        this.up().add(this._appSettings);
+//
+//        return this._appSettings;
+//    },
+    showSettings: function(options) {      
         this._appSettings = Ext.create('Rally.app.AppSettings', Ext.apply({
             fields: this.getSettingsFields(),
             settings: this.getSettings(),
             defaultSettings: this.getDefaultSettings(),
             context: this.getContext(),
             settingsScope: this.settingsScope,
-            autoScroll: true
+            autoScroll: true,
+            scope:this
         }, options));
         
         this._appSettings.on('cancel', this._hideSettings, this);
         this._appSettings.on('save', this._onSettingsSaved, this);
-
+        this._appSettings.on('afterlayout', this.resizeIframe, this);
+    
         this.hide();
         this.up().add(this._appSettings);
-
+        
         return this._appSettings;
+    },
+    resizeIframe: function() {
+        var iframeContentHeight = 400;    
+        var container = window.frameElement.parentElement;
+        if (container != parent.document.body) {
+            container.style.height = iframeContentHeight + 'px';
+        }
+        window.frameElement.style.height = iframeContentHeight + 'px';
+        return;
     }
 });

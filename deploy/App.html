@@ -3,11 +3,11 @@
 <head>
     <title>Rollup Tree Grid</title>
     <!--  (c) 2014 Rally Software Development Corp.  All Rights Reserved. -->
-    <!--  Build Date: Sat May 03 2014 21:11:42 GMT-0700 (PDT) -->
+    <!--  Build Date: Mon May 05 2014 08:48:03 GMT-0700 (PDT) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Sat May 03 2014 21:11:42 GMT-0700 (PDT)";
-        var CHECKSUM = 67326517967;
+        var APP_BUILD_DATE = "Mon May 05 2014 08:48:03 GMT-0700 (PDT)";
+        var CHECKSUM = 71211630980;
     </script>
     
     <script type="text/javascript" src="/apps/2.0rc2/sdk.js"></script>
@@ -1074,23 +1074,52 @@ Ext.define('CustomApp', {
     /*
      * Override so that the settings box fits (shows the buttons)
      */
-    showSettings: function(options) {        
+//    showSettings: function(options) {        
+//        this._appSettings = Ext.create('Rally.app.AppSettings', Ext.apply({
+//            fields: this.getSettingsFields(),
+//            settings: this.getSettings(),
+//            defaultSettings: this.getDefaultSettings(),
+//            context: this.getContext(),
+//            settingsScope: this.settingsScope,
+//            autoScroll: true
+//        }, options));
+//        
+//        this._appSettings.on('cancel', this._hideSettings, this);
+//        this._appSettings.on('save', this._onSettingsSaved, this);
+//
+//        this.hide();
+//        this.up().add(this._appSettings);
+//
+//        return this._appSettings;
+//    },
+    showSettings: function(options) {      
         this._appSettings = Ext.create('Rally.app.AppSettings', Ext.apply({
             fields: this.getSettingsFields(),
             settings: this.getSettings(),
             defaultSettings: this.getDefaultSettings(),
             context: this.getContext(),
             settingsScope: this.settingsScope,
-            autoScroll: true
+            autoScroll: true,
+            scope:this
         }, options));
         
         this._appSettings.on('cancel', this._hideSettings, this);
         this._appSettings.on('save', this._onSettingsSaved, this);
-
+        this._appSettings.on('afterlayout', this.resizeIframe, this);
+    
         this.hide();
         this.up().add(this._appSettings);
-
+        
         return this._appSettings;
+    },
+    resizeIframe: function() {
+        var iframeContentHeight = 400;    
+        var container = window.frameElement.parentElement;
+        if (container != parent.document.body) {
+            container.style.height = iframeContentHeight + 'px';
+        }
+        window.frameElement.style.height = iframeContentHeight + 'px';
+        return;
     }
 });
 
