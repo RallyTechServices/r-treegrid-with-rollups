@@ -86,8 +86,10 @@ Ext.define('CustomApp', {
         if ( this.sparkler ) { this.sparkler.hide(); }
     },
     _getFieldsToFetch: function() {
-        var fields_to_fetch =  ['FormattedID','Name', 'State','Children',this.calculate_original_field_name,'PlannedStartDate','PlannedEndDate'];
-        
+        var fields_to_fetch =  ['FormattedID','Name', 'State','Children',this.calculate_original_field_name,
+            'PlannedStartDate','PlannedEndDate','DirectChildrenCount',
+            'AcceptedDate','ScheduleState','Defects',this.calculate_story_field_name, this.calculate_defect_field_name];
+
         var additional_fields = this.getSetting('additional_fields_for_pis');
         if ( typeof(additional_fields) == "string" ) {
             additional_fields = additional_fields.split(',');
@@ -101,6 +103,7 @@ Ext.define('CustomApp', {
                 fields_to_fetch.push(field);
             }
         });
+        this.logger.log("Fetch these fields: ", fields_to_fetch);
         return fields_to_fetch;
     },
     _getPITreeStore: function(pi_paths) {
@@ -138,7 +141,7 @@ Ext.define('CustomApp', {
                     
                     var fields = [];
                     Ext.Array.each(additional_fields, function(field) {
-                        
+                        me.logger.log("Making model with field: ",field);
                         if ( typeof(field) == 'object' ) {
                             fields.push(field.get('name'));
                         } else {
@@ -150,6 +153,8 @@ Ext.define('CustomApp', {
                         extend: 'TSTreeModel',
                         fields: fields
                     };
+                    
+                    me.logger.log("Made a model using these fields: ", fields);
                     
                     Ext.define('TSTreeModelWithAdditions', model);
                     
@@ -185,7 +190,7 @@ Ext.define('CustomApp', {
             filters: [
                 this._getChildFilterForItem(node_hash,pi_paths)
             ],
-            fetch: ['FormattedID','Name','DirectChildrenCount','Children','AcceptedDate','ScheduleState','Defects',me.calculate_story_field_name],
+            fetch: this._getFieldsToFetch(),
             context: { project: null },
             autoLoad: true,
             listeners: {
@@ -256,7 +261,7 @@ Ext.define('CustomApp', {
             filters: [
                 this._getDefectFilterForItem(node_hash)
             ],
-            fetch: ['FormattedID','Name','AcceptedDate','State', me.calculate_defect_field_name],
+            fetch: this._getFieldsToFetch(),
             context: { project: null },
             autoLoad: true,
             listeners: {
@@ -444,6 +449,14 @@ Ext.define('CustomApp', {
                 width: me.getSetting(column_index + '_column') || 100,
                 menuDisabled: true
             };
+            
+            if ( column_header == "Owner" ) {
+                additional_column.renderer = function(value) {
+                    if ( ! value ) { return "--None--"; }
+                    
+                    return value._refObjectName;
+                };
+            }
             columns.push(additional_column);
         });
         me.logger.log("Making Columns ", columns);
@@ -538,6 +551,9 @@ Ext.define('CustomApp', {
                 var type = field.attributeDefinition.AttributeType;
                 if ( type == "TEXT" || type == "OBJECT" || type == "COLLECTION" ) {
                     should_show_field = false;
+                }
+                if ( field.name == "Owner" ) {
+                    should_show_field = true;
                 }
                 if ( Ext.Array.indexOf(forbidden_fields,field.name) > -1 ) {
                     should_show_field = false;
