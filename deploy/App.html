@@ -3,11 +3,11 @@
 <head>
     <title>Rollup Tree Grid</title>
     <!--  (c) 2014 Rally Software Development Corp.  All Rights Reserved. -->
-    <!--  Build Date: Mon May 19 2014 07:10:09 GMT-0700 (PDT) -->
+    <!--  Build Date: Mon May 19 2014 13:56:52 GMT-0700 (PDT) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Mon May 19 2014 07:10:09 GMT-0700 (PDT)";
-        var CHECKSUM = 72968240797;
+        var APP_BUILD_DATE = "Mon May 19 2014 13:56:52 GMT-0700 (PDT)";
+        var CHECKSUM = 81844639843;
     </script>
     
     <script type="text/javascript" src="/apps/2.0rc2/sdk.js"></script>
@@ -147,6 +147,52 @@ Ext.define('Rally.technicalservices.Logger',{
 
 });
 
+Ext.override(Rally.app.AppSettings,{
+    logger: new Rally.technicalservices.Logger(),
+    // something wrong with field names for get value from field selector
+    _saveAppScopedSettings: function() {
+        var me = this;
+        
+        if (this.getAppScopedSettingsForm() && Ext.Object.getSize(this.getAppScopedSettingsForm().getValues())) {
+            
+            var globalAppSettings = this.getAppScopedSettingsForm().getValues(false,false,false,true);
+            
+            // Use the displayName instead of the name so we can have the spaces ready for display
+            var additional_fields = [];
+            
+            Ext.Array.each(globalAppSettings.additional_fields_for_pis,function(field){
+                me.logger.log("SETTINGS FIELD ");
+                me.logger.log(field);
+                me.logger.log(field.get('displayName'));
+                me.logger.log(field.get('name'));
+                
+                additional_fields.push(field.get('name'));
+            });
+            globalAppSettings.additional_fields_for_pis = additional_fields;
+            
+            Ext.apply(this.settings, globalAppSettings);
+    
+            Rally.data.PreferenceManager.update({
+                appID: this.getContext() && this.getContext().get('appID'),
+                settings: globalAppSettings,
+                project: null,
+                workspace: null,
+                success: function(updatedRecords, notUpdatedRecords) {
+                    this._saveScopedSettings({
+                        updatedRecords: updatedRecords,
+                        notUpdatedRecords: notUpdatedRecords
+                    });
+                },
+                scope: this
+            });
+        } else {
+            this._saveScopedSettings({
+                updatedRecords: [],
+                notUpdatedRecords: []
+            });
+        }
+    }
+});
 Ext.define('Rally.technicalservices.ProgressBarTemplate', {
     requires: [],
     extend: 'Ext.XTemplate',
@@ -523,25 +569,39 @@ Ext.define('CustomApp', {
         if ( this.sparkler ) { this.sparkler.hide(); }
     },
     _getFieldsToFetch: function() {
+        var me = this;
         var fields_to_fetch =  ['FormattedID','Name', 'State','Children',this.calculate_original_field_name,
             'PlannedStartDate','PlannedEndDate','DirectChildrenCount',
             'AcceptedDate','ScheduleState','Defects',this.calculate_story_field_name, this.calculate_defect_field_name];
 
         var additional_fields = this.getSetting('additional_fields_for_pis');
+        
         if ( typeof(additional_fields) == "string" ) {
             additional_fields = additional_fields.split(',');
         }
         
         Ext.Array.each(additional_fields, function(field) {
-            
             if ( typeof(field) == 'object' ) {
                 fields_to_fetch.push(field.get('name'));
             } else {
-                fields_to_fetch.push(field);
+                fields_to_fetch.push(me._getFieldNameFromDisplay(field));
             }
         });
         this.logger.log("Fetch these fields: ", fields_to_fetch);
         return fields_to_fetch;
+    },
+    _getFieldNameFromDisplay: function(field_name) {
+        return field_name.replace(/ /g, "");
+    },
+    _getFieldDisplayFromName: function(field_name){
+        var str = field_name.replace(/^c_/,"");
+        
+        return str.replace( /(^[a-z]+)|[0-9]+|[A-Z][a-z]+|[A-Z]+(?=[A-Z][a-z]|[0-9])/g, function(match, first){ 
+            if (first) {
+                match = match[0].toUpperCase() + match.substr(1);
+            }
+            return match + ' ';
+        });
     },
     _getPITreeStore: function(pi_paths) {
         var me = this;
@@ -580,9 +640,9 @@ Ext.define('CustomApp', {
                     Ext.Array.each(additional_fields, function(field) {
                         me.logger.log("Making model with field: ",field);
                         if ( typeof(field) == 'object' ) {
-                            fields.push(field.get('name'));
+                            fields.push(me._getFieldNameFromDisplay(field.get('name')));
                         } else {
-                            fields.push(field);
+                            fields.push(me._getFieldNameFromDisplay(field));
                         }
                     });
                         
@@ -775,6 +835,7 @@ Ext.define('CustomApp', {
     },
     _getColumns: function() {
         var me = this;
+        me.logger.log("_getColumns");
         
         var name_renderer = function(value,meta_data,record) {
             return me._nameRenderer(value,meta_data,record);
@@ -874,11 +935,14 @@ Ext.define('CustomApp', {
         Ext.Array.each( additional_fields, function(additional_field){
             var column_header = additional_field;
             var column_index = additional_field;
-            
+
             if ( typeof(additional_field) == 'object' ) {
                 column_header = additional_field.get('displayName');
                 column_index = additional_field.get('name');
             } 
+            column_index = me._getFieldNameFromDisplay(column_index);
+            column_header = me._getFieldDisplayFromName(column_header);
+            
             var additional_column = {
                 dataIndex: column_index,
                 text: column_header,

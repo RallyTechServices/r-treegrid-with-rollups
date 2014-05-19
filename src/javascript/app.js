@@ -86,25 +86,39 @@ Ext.define('CustomApp', {
         if ( this.sparkler ) { this.sparkler.hide(); }
     },
     _getFieldsToFetch: function() {
+        var me = this;
         var fields_to_fetch =  ['FormattedID','Name', 'State','Children',this.calculate_original_field_name,
             'PlannedStartDate','PlannedEndDate','DirectChildrenCount',
             'AcceptedDate','ScheduleState','Defects',this.calculate_story_field_name, this.calculate_defect_field_name];
 
         var additional_fields = this.getSetting('additional_fields_for_pis');
+        
         if ( typeof(additional_fields) == "string" ) {
             additional_fields = additional_fields.split(',');
         }
         
         Ext.Array.each(additional_fields, function(field) {
-            
             if ( typeof(field) == 'object' ) {
                 fields_to_fetch.push(field.get('name'));
             } else {
-                fields_to_fetch.push(field);
+                fields_to_fetch.push(me._getFieldNameFromDisplay(field));
             }
         });
         this.logger.log("Fetch these fields: ", fields_to_fetch);
         return fields_to_fetch;
+    },
+    _getFieldNameFromDisplay: function(field_name) {
+        return field_name.replace(/ /g, "");
+    },
+    _getFieldDisplayFromName: function(field_name){
+        var str = field_name.replace(/^c_/,"");
+        
+        return str.replace( /(^[a-z]+)|[0-9]+|[A-Z][a-z]+|[A-Z]+(?=[A-Z][a-z]|[0-9])/g, function(match, first){ 
+            if (first) {
+                match = match[0].toUpperCase() + match.substr(1);
+            }
+            return match + ' ';
+        });
     },
     _getPITreeStore: function(pi_paths) {
         var me = this;
@@ -143,9 +157,9 @@ Ext.define('CustomApp', {
                     Ext.Array.each(additional_fields, function(field) {
                         me.logger.log("Making model with field: ",field);
                         if ( typeof(field) == 'object' ) {
-                            fields.push(field.get('name'));
+                            fields.push(me._getFieldNameFromDisplay(field.get('name')));
                         } else {
-                            fields.push(field);
+                            fields.push(me._getFieldNameFromDisplay(field));
                         }
                     });
                         
@@ -338,6 +352,7 @@ Ext.define('CustomApp', {
     },
     _getColumns: function() {
         var me = this;
+        me.logger.log("_getColumns");
         
         var name_renderer = function(value,meta_data,record) {
             return me._nameRenderer(value,meta_data,record);
@@ -437,11 +452,14 @@ Ext.define('CustomApp', {
         Ext.Array.each( additional_fields, function(additional_field){
             var column_header = additional_field;
             var column_index = additional_field;
-            
+
             if ( typeof(additional_field) == 'object' ) {
                 column_header = additional_field.get('displayName');
                 column_index = additional_field.get('name');
             } 
+            column_index = me._getFieldNameFromDisplay(column_index);
+            column_header = me._getFieldDisplayFromName(column_header);
+            
             var additional_column = {
                 dataIndex: column_index,
                 text: column_header,
