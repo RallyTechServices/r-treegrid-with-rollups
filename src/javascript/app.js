@@ -459,7 +459,7 @@ Ext.define('CustomApp', {
             store: tree_store,
             cls: 'rally-grid',
             rootVisible: false,
-            enableColumnMove: false,
+            enableColumnMove: true,
             listeners: {
                 scope: this,
                 columnresize: this._saveColumnSizes
