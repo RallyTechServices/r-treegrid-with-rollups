@@ -3,10 +3,10 @@
 <head>
     <title>Rollup Tree Grid</title>
     <!--  (c) 2013 Rally Software Development Corp.  All Rights Reserved. -->
-    <!--  Build Date: Tue May 20 2014 06:03:15 GMT-0700 (PDT) -->
+    <!--  Build Date: Tue May 20 2014 06:24:49 GMT-0700 (PDT) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Tue May 20 2014 06:03:15 GMT-0700 (PDT)";
+        var APP_BUILD_DATE = "Tue May 20 2014 06:24:49 GMT-0700 (PDT)";
         var CHECKSUM = [%= checksum %];
     </script>
     
@@ -39,8 +39,10 @@
     font-family: ProximaNovaSemiBold, Helvetica, Arial;
     font-size: 10px;
     font-weight: normal;
-    line-height: 12px;
+    line-height: 16px;
     margin-right: 15px;
+    padding-bottom: 0px;
+    background-color: transparent;
     text-overflow: clip;
     -ms-text-overflow: clip;
     text-transform: uppercase;
@@ -60,6 +62,10 @@
 .x-grid-cell-inner {
     font-family: NotoSans, Helvetica, Arial;
     font-size: 12px;
+}
+
+.yes-harmonized .rally-grid.x-grid .x-grid-header-ct .x-box-inner {
+    border-bottom: none;
 }
     </style>
 

@@ -13,8 +13,10 @@
     font-family: ProximaNovaSemiBold, Helvetica, Arial;
     font-size: 10px;
     font-weight: normal;
-    line-height: 12px;
+    line-height: 16px;
     margin-right: 15px;
+    padding-bottom: 0px;
+    background-color: transparent;
     text-overflow: clip;
     -ms-text-overflow: clip;
     text-transform: uppercase;
@@ -34,4 +36,8 @@
 .x-grid-cell-inner {
     font-family: NotoSans, Helvetica, Arial;
     font-size: 12px;
+}
+
+.yes-harmonized .rally-grid.x-grid .x-grid-header-ct .x-box-inner {
+    border-bottom: none;
 }
