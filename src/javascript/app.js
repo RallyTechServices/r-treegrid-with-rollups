@@ -468,13 +468,14 @@ Ext.define('CustomApp', {
                 menuDisabled: true
             };
             
-            if ( column_header == "Owner" ) {
-                additional_column.renderer = function(value) {
-                    if ( ! value ) { return "--None--"; }
+            additional_column.renderer = function(value) {
+                if ( typeof(value) == "object" ) {
+                    if ( ! value ) { return ""; }
                     
                     return value._refObjectName;
-                };
-            }
+                } 
+                return value;
+            };
             columns.push(additional_column);
         });
         me.logger.log("Making Columns ", columns);
