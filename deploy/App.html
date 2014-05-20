@@ -3,11 +3,11 @@
 <head>
     <title>Rollup Tree Grid</title>
     <!--  (c) 2014 Rally Software Development Corp.  All Rights Reserved. -->
-    <!--  Build Date: Tue May 20 2014 06:24:49 GMT-0700 (PDT) -->
+    <!--  Build Date: Tue May 20 2014 06:30:22 GMT-0700 (PDT) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Tue May 20 2014 06:24:49 GMT-0700 (PDT)";
-        var CHECKSUM = 82741042975;
+        var APP_BUILD_DATE = "Tue May 20 2014 06:30:22 GMT-0700 (PDT)";
+        var CHECKSUM = 83383506186;
     </script>
     
     <script type="text/javascript" src="/apps/2.0rc2/sdk.js"></script>
@@ -840,7 +840,7 @@ Ext.define('CustomApp', {
         
         var name_renderer = function(value,meta_data,record) {
             return me._nameRenderer(value,meta_data,record);
-        }
+        };
         
         var columns = [
             {
@@ -924,6 +924,11 @@ Ext.define('CustomApp', {
                 itemId:'delta_column',
                 width: this.getSetting('delta_column') || 100,
                 renderer: function(value,meta_data,record){
+                    if ( value > 0 ) {
+                        meta_data.style = "color: red";
+                    } else if ( value < 0 ) {
+                        meta_data.style = "color: blue";
+                    }
                     return Ext.util.Format.number(value, '0.00');
                 },
                 menuDisabled: true

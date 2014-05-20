@@ -356,7 +356,7 @@ Ext.define('CustomApp', {
         
         var name_renderer = function(value,meta_data,record) {
             return me._nameRenderer(value,meta_data,record);
-        }
+        };
         
         var columns = [
             {
@@ -440,6 +440,11 @@ Ext.define('CustomApp', {
                 itemId:'delta_column',
                 width: this.getSetting('delta_column') || 100,
                 renderer: function(value,meta_data,record){
+                    if ( value > 0 ) {
+                        meta_data.style = "color: red";
+                    } else if ( value < 0 ) {
+                        meta_data.style = "color: blue";
+                    }
                     return Ext.util.Format.number(value, '0.00');
                 },
                 menuDisabled: true
