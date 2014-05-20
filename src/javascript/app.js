@@ -484,7 +484,37 @@ Ext.define('CustomApp', {
             columns.push(additional_column);
         });
         me.logger.log("Making Columns ", columns);
-        return columns;
+        
+        return me._arrangeColumns(columns);
+    },
+    _arrangeColumns: function(columns) {
+        var arranged_columns = [];
+        var column_order_string = this.getSetting("column_order");
+        
+        this.logger.log("Arranging columns as ", column_order_string );
+        if ( column_order_string ) {
+            var column_order_array = column_order_string.split(',');
+            // cycle through the setting for the order of columns by name
+            // then find each column in the built array to push them
+            Ext.Array.each(column_order_array,function(column_name){
+                Ext.Array.each(columns,function(column){
+                    if ( column.itemId == column_name ) {
+                        arranged_columns.push(column);
+                    }
+                });
+            });
+            // Add in columns not yet ordered (because they've been added since the last time
+            // we re-ordered, maybe
+            Ext.Array.each(columns,function(column){
+                if ( Ext.Array.indexOf(column_order_string,column.itemId) == -1 ) {
+                    arranged_columns.push(column);
+                }
+            });
+        } else {
+            arranged_columns = columns;
+        }
+        
+        return arranged_columns;
     },
     _addTreeGrid: function(tree_store) {
         this.logger.log("creating TreeGrid");
@@ -499,9 +529,25 @@ Ext.define('CustomApp', {
             enableColumnMove: true,
             listeners: {
                 scope: this,
-                columnresize: this._saveColumnSizes
+                columnresize: this._saveColumnSizes,
+                columnmove: this._saveColumnPositions
             },
             columns: this._getColumns()
+        });
+    },
+    _saveColumnPositions: function(header_container,column,fromIdx,toIdx) {
+        this.logger.log("change column position", header_container);
+        this.logger.log("columns:", header_container.getGridColumns( true ));
+        var column_order = [];
+        Ext.Array.each(header_container.getGridColumns( true ), function(column){
+            column_order.push(column.itemId);
+        });
+        this.logger.log("Saving column order:",column_order);
+        var settings = {};
+        settings["column_order"] = column_order;
+        
+        this.updateSettingsValues({
+            settings: settings
         });
     },
     _saveColumnSizes: function(header_container,column,width){
