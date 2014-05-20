@@ -3,11 +3,11 @@
 <head>
     <title>Rollup Tree Grid</title>
     <!--  (c) 2014 Rally Software Development Corp.  All Rights Reserved. -->
-    <!--  Build Date: Tue May 20 2014 05:58:08 GMT-0700 (PDT) -->
+    <!--  Build Date: Tue May 20 2014 06:03:15 GMT-0700 (PDT) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Tue May 20 2014 05:58:08 GMT-0700 (PDT)";
-        var CHECKSUM = 81911773849;
+        var APP_BUILD_DATE = "Tue May 20 2014 06:03:15 GMT-0700 (PDT)";
+        var CHECKSUM = 82091065769;
     </script>
     
     <script type="text/javascript" src="/apps/2.0rc2/sdk.js"></script>
@@ -23,7 +23,8 @@
     total_rollup_header: 'Total Rollup',
     pert_completed_header: 'PERT Completed',
     pert_remaining_header: 'Pert Remaining',
-    delta_header: 'Delta'
+    delta_header: 'Delta',
+    tree_header: 'Project'
  });
 /**
  * A link that pops up a version dialog box
@@ -844,7 +845,7 @@ Ext.define('CustomApp', {
         var columns = [
             {
                 xtype: 'treecolumn',
-                text: ' ',
+                text: TSGlobals.tree_header,
                 dataIndex: 'FormattedID',
                 itemId: 'tree_column',
                 renderer: name_renderer,

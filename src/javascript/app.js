@@ -361,7 +361,7 @@ Ext.define('CustomApp', {
         var columns = [
             {
                 xtype: 'treecolumn',
-                text: ' ',
+                text: TSGlobals.tree_header,
                 dataIndex: 'FormattedID',
                 itemId: 'tree_column',
                 renderer: name_renderer,

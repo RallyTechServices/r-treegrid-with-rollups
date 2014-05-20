@@ -6,5 +6,6 @@
     total_rollup_header: 'Total Rollup',
     pert_completed_header: 'PERT Completed',
     pert_remaining_header: 'Pert Remaining',
-    delta_header: 'Delta'
+    delta_header: 'Delta',
+    tree_header: 'Project'
  });
