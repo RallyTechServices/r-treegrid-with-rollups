@@ -625,6 +625,9 @@ Ext.define('CustomApp', {
                 if ( field.name == "Owner" ) {
                     should_show_field = true;
                 }
+                if ( field.name == "SOWReference") {
+                    should_show_field = true;
+                }
                 if ( Ext.Array.indexOf(forbidden_fields,field.name) > -1 ) {
                     should_show_field = false;
                 }
