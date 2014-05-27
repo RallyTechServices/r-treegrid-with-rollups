@@ -720,47 +720,27 @@ Ext.define('CustomApp', {
          });
          this.settings_dialog.show();
     },
-    /*
-     * Override so that the settings box fits (shows the buttons)
-     */
-//    showSettings: function(options) {        
+//
+//    showSettings: function(options) {      
 //        this._appSettings = Ext.create('Rally.app.AppSettings', Ext.apply({
 //            fields: this.getSettingsFields(),
 //            settings: this.getSettings(),
 //            defaultSettings: this.getDefaultSettings(),
 //            context: this.getContext(),
 //            settingsScope: this.settingsScope,
-//            autoScroll: true
+//            autoScroll: true,
+//            scope:this
 //        }, options));
 //        
 //        this._appSettings.on('cancel', this._hideSettings, this);
 //        this._appSettings.on('save', this._onSettingsSaved, this);
-//
+//        this._appSettings.on('afterlayout', this.resizeIframe, this);
+//    
 //        this.hide();
 //        this.up().add(this._appSettings);
-//
+//        
 //        return this._appSettings;
 //    },
-    showSettings: function(options) {      
-        this._appSettings = Ext.create('Rally.app.AppSettings', Ext.apply({
-            fields: this.getSettingsFields(),
-            settings: this.getSettings(),
-            defaultSettings: this.getDefaultSettings(),
-            context: this.getContext(),
-            settingsScope: this.settingsScope,
-            autoScroll: true,
-            scope:this
-        }, options));
-        
-        this._appSettings.on('cancel', this._hideSettings, this);
-        this._appSettings.on('save', this._onSettingsSaved, this);
-        this._appSettings.on('afterlayout', this.resizeIframe, this);
-    
-        this.hide();
-        this.up().add(this._appSettings);
-        
-        return this._appSettings;
-    },
     resizeIframe: function() {
         var iframeContentHeight = 400;    
         var container = window.frameElement.parentElement;

@@ -1,9 +1,11 @@
 
 var convertDelta = function(value,record) {
     var done = record.get('__accepted_rollup') || 0;
-    var original = record.get('__original_value') || 0;
-    var delta = done - original;
-    return delta;
+    var original = record.get('__original_value');
+    if ( original || original === 0 ) {
+        return done - original;
+    }
+    return "";
 };
 var convertRemaining = function(value,record) {
     var done = record.get('__accepted_rollup') || 0;
