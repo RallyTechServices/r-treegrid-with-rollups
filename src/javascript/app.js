@@ -378,7 +378,7 @@ Ext.define('CustomApp', {
             {
                 xtype: 'treecolumn',
                 text: TSGlobals.tree_header,
-                dataIndex: 'FormattedID',
+                dataIndex: 'Name',
                 itemId: 'tree_column',
                 renderer: name_renderer,
                 width: this.getSetting('tree_column') || 200
@@ -578,8 +578,7 @@ Ext.define('CustomApp', {
         });
     },
     _nameRenderer: function(value,meta_data,record) {
-        var me = this;
-        return value + ": " + record.get('Name');
+        return record.get('Name');
     },
     _getChildModelForItem: function(node_hash,pi_paths){
         var parent_model = Ext.util.Format.lowercase(node_hash._type);

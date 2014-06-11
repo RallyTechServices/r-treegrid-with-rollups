@@ -3,11 +3,11 @@
 <head>
     <title>Rollup Tree Grid</title>
     <!--  (c) 2014 Rally Software Development Corp.  All Rights Reserved. -->
-    <!--  Build Date: Tue Jun 10 2014 18:01:36 GMT-0700 (PDT) -->
+    <!--  Build Date: Tue Jun 10 2014 18:08:44 GMT-0700 (PDT) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Tue Jun 10 2014 18:01:36 GMT-0700 (PDT)";
-        var CHECKSUM = 148090072269;
+        var APP_BUILD_DATE = "Tue Jun 10 2014 18:08:44 GMT-0700 (PDT)";
+        var CHECKSUM = 147893508166;
     </script>
     
     <script type="text/javascript" src="/apps/2.0rc2/sdk.js"></script>
@@ -1284,7 +1284,7 @@ Ext.define('CustomApp', {
             {
                 xtype: 'treecolumn',
                 text: TSGlobals.tree_header,
-                dataIndex: 'FormattedID',
+                dataIndex: 'Name',
                 itemId: 'tree_column',
                 renderer: name_renderer,
                 width: this.getSetting('tree_column') || 200
@@ -1484,8 +1484,7 @@ Ext.define('CustomApp', {
         });
     },
     _nameRenderer: function(value,meta_data,record) {
-        var me = this;
-        return value + ": " + record.get('Name');
+        return record.get('Name');
     },
     _getChildModelForItem: function(node_hash,pi_paths){
         var parent_model = Ext.util.Format.lowercase(node_hash._type);
