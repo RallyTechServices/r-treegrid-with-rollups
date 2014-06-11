@@ -578,7 +578,9 @@ Ext.define('CustomApp', {
         });
     },
     _nameRenderer: function(value,meta_data,record) {
-        return record.get('Name');
+        var display_value = value;
+        var url = Rally.nav.Manager.getDetailUrl( record );
+        return "<a target='_blank' href='" + url + "'>" + display_value + "</a>";
     },
     _getChildModelForItem: function(node_hash,pi_paths){
         var parent_model = Ext.util.Format.lowercase(node_hash._type);

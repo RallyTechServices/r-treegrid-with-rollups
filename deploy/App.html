@@ -3,11 +3,11 @@
 <head>
     <title>Rollup Tree Grid</title>
     <!--  (c) 2014 Rally Software Development Corp.  All Rights Reserved. -->
-    <!--  Build Date: Tue Jun 10 2014 18:08:44 GMT-0700 (PDT) -->
+    <!--  Build Date: Tue Jun 10 2014 18:17:56 GMT-0700 (PDT) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Tue Jun 10 2014 18:08:44 GMT-0700 (PDT)";
-        var CHECKSUM = 147893508166;
+        var APP_BUILD_DATE = "Tue Jun 10 2014 18:17:56 GMT-0700 (PDT)";
+        var CHECKSUM = 148776246876;
     </script>
     
     <script type="text/javascript" src="/apps/2.0rc2/sdk.js"></script>
@@ -378,6 +378,7 @@ Ext.define('TSTreeModel',{
         { name: 'ScheduleState', type:'String' },
         { name: 'PlannedStartDate', type: 'Date' },
         { name: 'PlannedEndDate', type: 'Date' },
+        { name: '_ref', type:'String' },
         { name: '_type', type:'String' },
         { name: '__original_value', type: 'auto' },
         { name: '__rollup', type:'Float' },
@@ -1484,7 +1485,9 @@ Ext.define('CustomApp', {
         });
     },
     _nameRenderer: function(value,meta_data,record) {
-        return record.get('Name');
+        var display_value = value;
+        var url = Rally.nav.Manager.getDetailUrl( record );
+        return "<a target='_blank' href='" + url + "'>" + display_value + "</a>";
     },
     _getChildModelForItem: function(node_hash,pi_paths){
         var parent_model = Ext.util.Format.lowercase(node_hash._type);

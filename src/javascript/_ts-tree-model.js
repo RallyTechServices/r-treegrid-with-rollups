@@ -42,6 +42,7 @@ Ext.define('TSTreeModel',{
         { name: 'ScheduleState', type:'String' },
         { name: 'PlannedStartDate', type: 'Date' },
         { name: 'PlannedEndDate', type: 'Date' },
+        { name: '_ref', type:'String' },
         { name: '_type', type:'String' },
         { name: '__original_value', type: 'auto' },
         { name: '__rollup', type:'Float' },
