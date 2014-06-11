@@ -4,15 +4,31 @@ Ext.define('CustomApp', {
     logger: new Rally.technicalservices.Logger(),
     items: [
         {xtype:'container',itemId:'message_box'},
+        {xtype:'container',itemId:'selector_box', margin: 5},
         {xtype:'container',itemId:'display_box', margin: 5},
         {xtype:'tsinfolink'}
     ],
     launch: function() {
+        
         if (typeof(this.getAppId()) == 'undefined' ) {
             // not inside Rally
             this._showExternalSettingsDialog(this.getSettingsFields());
         } else {
             this._getData();
+        }
+    },
+    _addButton: function(tree) {
+        if ( this._isAbleToDownloadFiles() ) {
+            this.down('#selector_box').add({
+                xtype:'rallybutton',
+                itemId:'save_button',
+                text:'Save As CSV',
+                scope: this,
+                handler: function() {
+                    csv = this._getCSVFromTree(tree);
+                    this._saveCSVToFile(csv,'pert.csv',{type:'text/csv;charset=utf-8'});
+                }
+            });
         }
     },
     _getData: function() {
@@ -534,6 +550,8 @@ Ext.define('CustomApp', {
             },
             columns: this._getColumns()
         });
+        
+        this._addButton(pi_tree);
     },
     _saveColumnPositions: function(header_container,column,fromIdx,toIdx) {
         this.logger.log("change column position", header_container);
@@ -723,27 +741,6 @@ Ext.define('CustomApp', {
          });
          this.settings_dialog.show();
     },
-//
-//    showSettings: function(options) {      
-//        this._appSettings = Ext.create('Rally.app.AppSettings', Ext.apply({
-//            fields: this.getSettingsFields(),
-//            settings: this.getSettings(),
-//            defaultSettings: this.getDefaultSettings(),
-//            context: this.getContext(),
-//            settingsScope: this.settingsScope,
-//            autoScroll: true,
-//            scope:this
-//        }, options));
-//        
-//        this._appSettings.on('cancel', this._hideSettings, this);
-//        this._appSettings.on('save', this._onSettingsSaved, this);
-//        this._appSettings.on('afterlayout', this.resizeIframe, this);
-//    
-//        this.hide();
-//        this.up().add(this._appSettings);
-//        
-//        return this._appSettings;
-//    },
     resizeIframe: function() {
         var iframeContentHeight = 400;    
         var container = window.frameElement.parentElement;
@@ -752,5 +749,56 @@ Ext.define('CustomApp', {
         }
         window.frameElement.style.height = iframeContentHeight + 'px';
         return;
+    },
+    _isAbleToDownloadFiles: function() {
+        try { 
+            var isFileSaverSupported = !!new Blob(); 
+        } catch(e){
+            this.logger.log(" NOTE: This browser does not support downloading");
+            return false;
+        }
+        return true;
+    },
+    _getCSVFromChildren: function(node,column_names){
+        var csv = [];
+        node.eachChild(function(child){
+            var node_values = [];
+            Ext.Array.each(column_names,function(column_name){
+                node_values.push(child.get(column_name));
+            });
+            csv.push('"' + node_values.join('","') + '"');
+        },this);
+        return csv;
+    },
+    _getCSVFromTree:function(tree){
+        var columns = tree.columns;
+        var column_names = [];
+        var headers = [];
+        
+        var csv = [];
+
+        Ext.Array.each(columns,function(column){
+            column_names.push(column.dataIndex);
+            headers.push(column.text);
+        });
+        csv.push('"' + headers.join('","') + '"');
+        
+        var root = tree.getStore().getRootNode();
+        root.eachChild(function(child){
+            var node_values = [];
+            Ext.Array.each(column_names,function(column_name){
+                node_values.push(child.get(column_name));
+            });
+            csv.push('"' + node_values.join('","') + '"');
+            var child_csv = this._getCSVFromChildren(child,column_names);
+            csv = Ext.Array.push(csv, child_csv);
+        },this);
+        
+        return csv.join('\r\n');
+    },
+    _saveCSVToFile:function(csv,file_name,type_object){
+        var blob = new Blob([csv],type_object);
+        saveAs(blob,file_name);
     }
+
 });
