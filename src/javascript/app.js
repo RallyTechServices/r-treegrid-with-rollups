@@ -267,6 +267,8 @@ Ext.define('CustomApp', {
                             success: function(records){
                                 node_hash.__rollup = this._calculateRollup(node_hash,child_hashes,'__rollup');
                                 node_hash.__accepted_rollup = this._calculateRollup(node_hash,child_hashes,'__accepted_rollup');
+                                node_hash.__rollup_defect = this._calculateRollup(node_hash,child_hashes,'__rollup_defect');
+                                node_hash.__accepted_rollup_defect = this._calculateRollup(node_hash,child_hashes,'__accepted_rollup_defect');
                                 deferred.resolve(node_hash);
                             },
                             failure: function(error) {
@@ -275,7 +277,9 @@ Ext.define('CustomApp', {
                         });
                     } else {
                         node_hash.__rollup = this._calculateRollup(node_hash,child_hashes,'__rollup');
-                        node_hash.__accepted_rollup = this._calculateRollup(node_hash,child_hashes,'__accepted_rollup');
+                        node_hash.__accepted_rollup_defect = this._calculateRollup(node_hash,child_hashes,'__accepted_rollup');
+                        node_hash.__rollup = this._calculateRollup(node_hash,child_hashes,'__rollup_defect');
+                        node_hash.__accepted_rollup_defect = this._calculateRollup(node_hash,child_hashes,'__accepted_rollup_defect');
                         deferred.resolve();
                     }
                 }
@@ -304,10 +308,11 @@ Ext.define('CustomApp', {
                         record_data.leaf = true;
                         
                         // set value for calculating field
-                        record_data.__rollup = record.get(me.calculate_defect_field_name);
+                        //record_data.__rollup = record.get(me.calculate_defect_field_name);
+                        record_data.__rollup_defect = record.get(me.calculate_defect_field_name);
                         me.logger.log("DEFECT ", me.calculate_defect_field_name, record);
                         if ( me._isAccepted(record_data) && me._isClosed(record_data )) {
-                            record_data.__accepted_rollup = record.get(me.calculate_defect_field_name);
+                            record_data.__accepted_rollup_defect = record.get(me.calculate_defect_field_name);
                         }
                         child_hashes.push(record_data);
                     });
@@ -318,6 +323,8 @@ Ext.define('CustomApp', {
                     
                     node_hash.__rollup = this._calculateRollup(node_hash,child_hashes,'__rollup');
                     node_hash.__accepted_rollup = this._calculateRollup(node_hash,child_hashes,'__accepted_rollup');
+                    node_hash.__rollup_defect = this._calculateRollup(node_hash,child_hashes,'__rollup_defect');
+                    node_hash.__accepted_rollup_defect = this._calculateRollup(node_hash,child_hashes,'__accepted_rollup_defect');
                     deferred.resolve();
                 }
             }
@@ -340,7 +347,7 @@ Ext.define('CustomApp', {
     },
     _calculateRollup: function(node_hash,child_hashes,field_name) {
         var me = this;
-        this._mask("Calculating Rollup...");
+        this._mask("Calculating Rollup with " + field_name + "...");
         // roll up the data
         var total_rollup = 0;
         /*
@@ -481,6 +488,24 @@ Ext.define('CustomApp', {
                 menuDisabled: true
             }];
         
+        if ( this.include_defects ) {
+            columns.push({
+                dataIndex: '__rollup_defect',
+                text: TSGlobals.total_rollup_defect_header,
+                itemId:'total_rollup_defect_column',
+                width: this.getSetting('total_rollup_defect_column') || 100,
+                renderer: Ext.util.Format.numberRenderer('0.00'),
+                menuDisabled: true
+            });
+            columns.push({
+                dataIndex: '__accepted_rollup_defect',
+                text: TSGlobals.pert_completed_defect_header,
+                itemId:'pert_completed_defect_column',
+                width: this.getSetting('pert_completed_defect_column') || 100,
+                renderer: Ext.util.Format.numberRenderer('0.00'),
+                menuDisabled: true
+            });
+        }
         var additional_fields = this.getSetting('additional_fields_for_pis');
         if ( typeof(additional_fields) == "string" ) {
             additional_fields = additional_fields.split(',');
