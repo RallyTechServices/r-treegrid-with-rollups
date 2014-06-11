@@ -451,10 +451,25 @@ Ext.define('CustomApp', {
                 menuDisabled: true
             },
             {
-                dataIndex: '__calculated_delta',
-                text: TSGlobals.delta_header,
-                itemId:'delta_column',
-                width: this.getSetting('delta_column') || 100,
+                dataIndex: '__calculated_accepted_delta',
+                text: TSGlobals.accepted_delta_header,
+                itemId:'accepted_delta_column',
+                width: this.getSetting('accepted_delta_column') || 100,
+                renderer: function(value,meta_data,record){
+                    if ( value > 0 ) {
+                        meta_data.style = "color: red";
+                    } else if ( value < 0 ) {
+                        meta_data.style = "color: blue";
+                    }
+                    return Ext.util.Format.number(value, '0.00');
+                },
+                menuDisabled: true
+            },
+            {
+                dataIndex: '__calculated_total_delta',
+                text: TSGlobals.total_delta_header,
+                itemId:'total_delta_column',
+                width: this.getSetting('total_delta_column') || 100,
                 renderer: function(value,meta_data,record){
                     if ( value > 0 ) {
                         meta_data.style = "color: red";

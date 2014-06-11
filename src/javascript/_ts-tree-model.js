@@ -1,6 +1,14 @@
 
-var convertDelta = function(value,record) {
+var convertAcceptedDelta = function(value,record) {
     var done = record.get('__accepted_rollup') || 0;
+    var original = record.get('__original_value');
+    if ( original || original === 0 ) {
+        return done - original;
+    }
+    return "";
+};
+var convertTotalDelta = function(value,record) {
+    var done = record.get('__rollup') || 0;
     var original = record.get('__original_value');
     if ( original || original === 0 ) {
         return done - original;
@@ -47,7 +55,8 @@ Ext.define('TSTreeModel',{
         { name: '__original_value', type: 'auto' },
         { name: '__rollup', type:'Float' },
         { name: '__accepted_rollup', type: 'Float' },
-        { name: '__calculated_delta', type: 'Float', convert: convertDelta },
+        { name: '__calculated_accepted_delta', type: 'Float', convert: convertAcceptedDelta },
+        { name: '__calculated_total_delta', type: 'Float', convert: convertTotalDelta },
         { name: '__calculated_remaining', type:'Float', convert: convertRemaining },
         { name: '__progress_by_original', type: 'Float', convert: convertProgressByOriginal },
         { name: '__progress_by_rollup', type: 'Float', convert: convertProgressByRollup },
