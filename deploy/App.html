@@ -3,11 +3,11 @@
 <head>
     <title>Rollup Tree Grid</title>
     <!--  (c) 2014 Rally Software Development Corp.  All Rights Reserved. -->
-    <!--  Build Date: Fri Jun 13 2014 09:11:22 GMT-0700 (PDT) -->
+    <!--  Build Date: Fri Jun 13 2014 09:16:32 GMT-0700 (PDT) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Fri Jun 13 2014 09:11:22 GMT-0700 (PDT)";
-        var CHECKSUM = 175213357262;
+        var APP_BUILD_DATE = "Fri Jun 13 2014 09:16:32 GMT-0700 (PDT)";
+        var CHECKSUM = 175086274340;
     </script>
     
     <script type="text/javascript" src="/apps/2.0rc2/sdk.js"></script>
@@ -17,19 +17,21 @@
              
  Ext.define('TSGlobals', {
     singleton: true,
+
     original_pert_header: 'Original PERT',
-    progress_by_original_header: 'Progress by Original',
-    progress_by_rollup_header: 'Progress by Rollup',
-    total_rollup_header: 'Total Rollup',
-    total_rollup_story_header: 'Total Rollup (Stories)',
-    total_rollup_defect_header: 'Total Rollup (Defects)',
-    pert_completed_header: 'PERT Completed',
-    pert_completed_story_header: 'PERT Completed (Stories)',
-    pert_completed_defect_header: 'PERT Completed (Defects)',
-    pert_remaining_header: 'Pert Remaining',
+    progress_by_original_header: '% Original',
+    progress_by_rollup_header: '% Total (Rollup)',
+    total_rollup_header: 'Total (Rollup)',
+    total_rollup_story_header: 'Story (Rollup)',
+    total_rollup_defect_header: 'Defect (Rollup)',
+    pert_completed_header: 'Total Rollup Completed',
+    pert_completed_story_header: 'Stories (Completed)',
+    pert_completed_defect_header: 'Defects (Completed)',
+    pert_remaining_header: 'Remaining (Total)',
     accepted_delta_header: 'Delta (Completed)',
     total_delta_header: 'Delta (Total)',
-    tree_header: 'Project'
+    tree_header: 'Name'
+
  });
 /**
  * A link that pops up a version dialog box
