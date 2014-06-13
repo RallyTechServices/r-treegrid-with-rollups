@@ -3,11 +3,11 @@
 <head>
     <title>Rollup Tree Grid</title>
     <!--  (c) 2014 Rally Software Development Corp.  All Rights Reserved. -->
-    <!--  Build Date: Thu Jun 12 2014 19:55:35 GMT-0700 (PDT) -->
+    <!--  Build Date: Fri Jun 13 2014 09:11:22 GMT-0700 (PDT) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Thu Jun 12 2014 19:55:35 GMT-0700 (PDT)";
-        var CHECKSUM = 175197936236;
+        var APP_BUILD_DATE = "Fri Jun 13 2014 09:11:22 GMT-0700 (PDT)";
+        var CHECKSUM = 175213357262;
     </script>
     
     <script type="text/javascript" src="/apps/2.0rc2/sdk.js"></script>
@@ -1259,8 +1259,8 @@ Ext.define('CustomApp', {
                     }
                     node_hash.children = Ext.Array.push(node_hash.children,child_hashes);
                     
-                    node_hash.__rollup_story = this._calculateRollup(node_hash,child_hashes,'__rollup_story');
-                    node_hash.__accepted_rollup_story = this._calculateRollup(node_hash,child_hashes,'__accepted_rollup');
+//                    node_hash.__rollup_story = this._calculateRollup(node_hash,child_hashes,'__rollup_story');
+//                    node_hash.__accepted_rollup_story = this._calculateRollup(node_hash,child_hashes,'__accepted_rollup');
                     node_hash.__rollup_defect = this._calculateRollup(node_hash,child_hashes,'__rollup_defect');
                     node_hash.__accepted_rollup_defect = this._calculateRollup(node_hash,child_hashes,'__accepted_rollup_defect');
                     deferred.resolve();

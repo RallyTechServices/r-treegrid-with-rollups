@@ -321,8 +321,8 @@ Ext.define('CustomApp', {
                     }
                     node_hash.children = Ext.Array.push(node_hash.children,child_hashes);
                     
-                    node_hash.__rollup_story = this._calculateRollup(node_hash,child_hashes,'__rollup_story');
-                    node_hash.__accepted_rollup_story = this._calculateRollup(node_hash,child_hashes,'__accepted_rollup');
+//                    node_hash.__rollup_story = this._calculateRollup(node_hash,child_hashes,'__rollup_story');
+//                    node_hash.__accepted_rollup_story = this._calculateRollup(node_hash,child_hashes,'__accepted_rollup');
                     node_hash.__rollup_defect = this._calculateRollup(node_hash,child_hashes,'__rollup_defect');
                     node_hash.__accepted_rollup_defect = this._calculateRollup(node_hash,child_hashes,'__accepted_rollup_defect');
                     deferred.resolve();
