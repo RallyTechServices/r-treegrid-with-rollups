@@ -5,8 +5,8 @@ var convertTotalRollup = function(value,record) {
     return defect + story;
 };
 var convertAcceptedRollup = function(value,record) {
-    var story = record.get('__rollup_accepted_story') || 0;
-    var defect = record.get('__rollup_accepted_defect') || 0;
+    var story = record.get('__accepted_rollup_story') || 0;
+    var defect = record.get('__accepted_rollup_defect') || 0;
 
     return defect + story;
 };

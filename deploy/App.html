@@ -3,11 +3,11 @@
 <head>
     <title>Rollup Tree Grid</title>
     <!--  (c) 2014 Rally Software Development Corp.  All Rights Reserved. -->
-    <!--  Build Date: Thu Jun 12 2014 19:27:47 GMT-0700 (PDT) -->
+    <!--  Build Date: Thu Jun 12 2014 19:36:50 GMT-0700 (PDT) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Thu Jun 12 2014 19:27:47 GMT-0700 (PDT)";
-        var CHECKSUM = 172003824628;
+        var APP_BUILD_DATE = "Thu Jun 12 2014 19:36:50 GMT-0700 (PDT)";
+        var CHECKSUM = 172003822556;
     </script>
     
     <script type="text/javascript" src="/apps/2.0rc2/sdk.js"></script>
@@ -346,8 +346,8 @@ var convertTotalRollup = function(value,record) {
     return defect + story;
 };
 var convertAcceptedRollup = function(value,record) {
-    var story = record.get('__rollup_accepted_story') || 0;
-    var defect = record.get('__rollup_accepted_defect') || 0;
+    var story = record.get('__accepted_rollup_story') || 0;
+    var defect = record.get('__accepted_rollup_defect') || 0;
 
     return defect + story;
 };
