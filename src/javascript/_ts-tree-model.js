@@ -1,4 +1,15 @@
+var convertTotalRollup = function(value,record) {
+    var story = record.get('__rollup_story') || 0;
+    var defect = record.get('__rollup_defect') || 0;
 
+    return defect + story;
+};
+var convertAcceptedRollup = function(value,record) {
+    var story = record.get('__rollup_accepted_story') || 0;
+    var defect = record.get('__rollup_accepted_defect') || 0;
+
+    return defect + story;
+};
 var convertAcceptedDelta = function(value,record) {
     var done = record.get('__accepted_rollup') || 0;
     var original = record.get('__original_value');
@@ -53,10 +64,14 @@ Ext.define('TSTreeModel',{
         { name: '_ref', type:'String' },
         { name: '_type', type:'String' },
         { name: '__original_value', type: 'auto' },
-        { name: '__rollup', type:'Float' },
+        { name: '__rollup_story', type:'Float' },
         { name: '__rollup_defect', type:'Float' },
-        { name: '__accepted_rollup', type: 'Float' },
+        { name: '__accepted_rollup_story', type: 'Float' },
         { name: '__accepted_rollup_defect', type: 'Float' },
+        
+        { name: '__rollup', type:'Float', convert: convertTotalRollup },
+        { name: '__accepted_rollup', type: 'Float', convert: convertAcceptedRollup },
+
         { name: '__calculated_accepted_delta', type: 'Float', convert: convertAcceptedDelta },
         { name: '__calculated_total_delta', type: 'Float', convert: convertTotalDelta },
         { name: '__calculated_remaining', type:'Float', convert: convertRemaining },

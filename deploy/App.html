@@ -3,11 +3,11 @@
 <head>
     <title>Rollup Tree Grid</title>
     <!--  (c) 2014 Rally Software Development Corp.  All Rights Reserved. -->
-    <!--  Build Date: Thu Jun 12 2014 19:13:40 GMT-0700 (PDT) -->
+    <!--  Build Date: Thu Jun 12 2014 19:27:47 GMT-0700 (PDT) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Thu Jun 12 2014 19:13:40 GMT-0700 (PDT)";
-        var CHECKSUM = 164212965494;
+        var APP_BUILD_DATE = "Thu Jun 12 2014 19:27:47 GMT-0700 (PDT)";
+        var CHECKSUM = 172003824628;
     </script>
     
     <script type="text/javascript" src="/apps/2.0rc2/sdk.js"></script>
@@ -21,8 +21,10 @@
     progress_by_original_header: 'Progress by Original',
     progress_by_rollup_header: 'Progress by Rollup',
     total_rollup_header: 'Total Rollup',
+    total_rollup_story_header: 'Total Rollup (Stories)',
     total_rollup_defect_header: 'Total Rollup (Defects)',
     pert_completed_header: 'PERT Completed',
+    pert_completed_story_header: 'PERT Completed (Stories)',
     pert_completed_defect_header: 'PERT Completed (Defects)',
     pert_remaining_header: 'Pert Remaining',
     accepted_delta_header: 'Delta (Completed)',
@@ -337,7 +339,18 @@ Ext.define('Rally.technicalservices.ProgressBarTemplate', {
 
     }
 });
+var convertTotalRollup = function(value,record) {
+    var story = record.get('__rollup_story') || 0;
+    var defect = record.get('__rollup_defect') || 0;
 
+    return defect + story;
+};
+var convertAcceptedRollup = function(value,record) {
+    var story = record.get('__rollup_accepted_story') || 0;
+    var defect = record.get('__rollup_accepted_defect') || 0;
+
+    return defect + story;
+};
 var convertAcceptedDelta = function(value,record) {
     var done = record.get('__accepted_rollup') || 0;
     var original = record.get('__original_value');
@@ -392,10 +405,14 @@ Ext.define('TSTreeModel',{
         { name: '_ref', type:'String' },
         { name: '_type', type:'String' },
         { name: '__original_value', type: 'auto' },
-        { name: '__rollup', type:'Float' },
+        { name: '__rollup_story', type:'Float' },
         { name: '__rollup_defect', type:'Float' },
-        { name: '__accepted_rollup', type: 'Float' },
+        { name: '__accepted_rollup_story', type: 'Float' },
         { name: '__accepted_rollup_defect', type: 'Float' },
+        
+        { name: '__rollup', type:'Float', convert: convertTotalRollup },
+        { name: '__accepted_rollup', type: 'Float', convert: convertAcceptedRollup },
+
         { name: '__calculated_accepted_delta', type: 'Float', convert: convertAcceptedDelta },
         { name: '__calculated_total_delta', type: 'Float', convert: convertTotalDelta },
         { name: '__calculated_remaining', type:'Float', convert: convertRemaining },
@@ -1170,9 +1187,9 @@ Ext.define('CustomApp', {
                         }
                         
                         // set value for calculating field
-                        record_data.__rollup = record.get(me.calculate_story_field_name);
+                        record_data.__rollup_story = record.get(me.calculate_story_field_name);
                         if ( me._isAccepted(record_data) ) {
-                            record_data.__accepted_rollup = record.get(me.calculate_story_field_name);
+                            record_data.__accepted_rollup_story = record.get(me.calculate_story_field_name);
                         }
                         child_hashes.push(record_data);
                     });
@@ -1186,8 +1203,8 @@ Ext.define('CustomApp', {
                         Deft.Promise.all(promises).then({
                             scope: this,
                             success: function(records){
-                                node_hash.__rollup = this._calculateRollup(node_hash,child_hashes,'__rollup');
-                                node_hash.__accepted_rollup = this._calculateRollup(node_hash,child_hashes,'__accepted_rollup');
+                                node_hash.__rollup_story = this._calculateRollup(node_hash,child_hashes,'__rollup_story');
+                                node_hash.__accepted_rollup_story = this._calculateRollup(node_hash,child_hashes,'__accepted_rollup_story');
                                 node_hash.__rollup_defect = this._calculateRollup(node_hash,child_hashes,'__rollup_defect');
                                 node_hash.__accepted_rollup_defect = this._calculateRollup(node_hash,child_hashes,'__accepted_rollup_defect');
                                 deferred.resolve(node_hash);
@@ -1197,9 +1214,9 @@ Ext.define('CustomApp', {
                             }
                         });
                     } else {
-                        node_hash.__rollup = this._calculateRollup(node_hash,child_hashes,'__rollup');
-                        node_hash.__accepted_rollup_defect = this._calculateRollup(node_hash,child_hashes,'__accepted_rollup');
-                        node_hash.__rollup = this._calculateRollup(node_hash,child_hashes,'__rollup_defect');
+                        node_hash.__rollup_story = this._calculateRollup(node_hash,child_hashes,'__rollup_story');
+                        node_hash.__accepted_rollup_story = this._calculateRollup(node_hash,child_hashes,'__accepted_rollup_story');
+                        node_hash.__rollup_defect = this._calculateRollup(node_hash,child_hashes,'__rollup_defect');
                         node_hash.__accepted_rollup_defect = this._calculateRollup(node_hash,child_hashes,'__accepted_rollup_defect');
                         deferred.resolve();
                     }
@@ -1242,8 +1259,8 @@ Ext.define('CustomApp', {
                     }
                     node_hash.children = Ext.Array.push(node_hash.children,child_hashes);
                     
-                    node_hash.__rollup = this._calculateRollup(node_hash,child_hashes,'__rollup');
-                    node_hash.__accepted_rollup = this._calculateRollup(node_hash,child_hashes,'__accepted_rollup');
+                    node_hash.__rollup_story = this._calculateRollup(node_hash,child_hashes,'__rollup_story');
+                    node_hash.__accepted_rollup_story = this._calculateRollup(node_hash,child_hashes,'__accepted_rollup');
                     node_hash.__rollup_defect = this._calculateRollup(node_hash,child_hashes,'__rollup_defect');
                     node_hash.__accepted_rollup_defect = this._calculateRollup(node_hash,child_hashes,'__accepted_rollup_defect');
                     deferred.resolve();
@@ -1353,18 +1370,18 @@ Ext.define('CustomApp', {
                 menuDisabled: true
             },
             {
-                dataIndex: '__rollup',
-                text: TSGlobals.total_rollup_header,
-                itemId:'total_rollup_column',
-                width: this.getSetting('total_rollup_column') || 100,
+                dataIndex: '__rollup_story',
+                text: TSGlobals.total_rollup_story_header,
+                itemId:'total_rollup_story_column',
+                width: this.getSetting('total_rollup_story_column') || 100,
                 renderer: Ext.util.Format.numberRenderer('0.00'),
                 menuDisabled: true
             },
             {
-                dataIndex: '__accepted_rollup',
-                text: TSGlobals.pert_completed_header,
-                itemId:'pert_completed_column',
-                width: this.getSetting('pert_completed_column') || 100,
+                dataIndex: '__accepted_rollup_story',
+                text: TSGlobals.pert_completed_story_header,
+                itemId:'pert_completed_story_column',
+                width: this.getSetting('pert_completed_story_column') || 100,
                 renderer: Ext.util.Format.numberRenderer('0.00'),
                 menuDisabled: true
             },
@@ -1427,6 +1444,26 @@ Ext.define('CustomApp', {
                 menuDisabled: true
             });
         }
+        
+        columns.push({
+            dataIndex: '__rollup',
+            text: TSGlobals.total_rollup_header,
+            itemId:'total_rollup_column',
+            width: this.getSetting('total_rollup_column') || 100,
+            renderer: Ext.util.Format.numberRenderer('0.00'),
+            menuDisabled: true
+        });
+        columns.push({
+            dataIndex: '__accepted_rollup',
+            text: TSGlobals.pert_completed_header,
+            itemId:'pert_completed_column',
+            width: this.getSetting('pert_completed_column') || 100,
+            renderer: Ext.util.Format.numberRenderer('0.00'),
+            menuDisabled: true
+        });
+        
+        
+        
         var additional_fields = this.getSetting('additional_fields_for_pis');
         if ( typeof(additional_fields) == "string" ) {
             additional_fields = additional_fields.split(',');

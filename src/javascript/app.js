@@ -249,9 +249,9 @@ Ext.define('CustomApp', {
                         }
                         
                         // set value for calculating field
-                        record_data.__rollup = record.get(me.calculate_story_field_name);
+                        record_data.__rollup_story = record.get(me.calculate_story_field_name);
                         if ( me._isAccepted(record_data) ) {
-                            record_data.__accepted_rollup = record.get(me.calculate_story_field_name);
+                            record_data.__accepted_rollup_story = record.get(me.calculate_story_field_name);
                         }
                         child_hashes.push(record_data);
                     });
@@ -265,8 +265,8 @@ Ext.define('CustomApp', {
                         Deft.Promise.all(promises).then({
                             scope: this,
                             success: function(records){
-                                node_hash.__rollup = this._calculateRollup(node_hash,child_hashes,'__rollup');
-                                node_hash.__accepted_rollup = this._calculateRollup(node_hash,child_hashes,'__accepted_rollup');
+                                node_hash.__rollup_story = this._calculateRollup(node_hash,child_hashes,'__rollup_story');
+                                node_hash.__accepted_rollup_story = this._calculateRollup(node_hash,child_hashes,'__accepted_rollup_story');
                                 node_hash.__rollup_defect = this._calculateRollup(node_hash,child_hashes,'__rollup_defect');
                                 node_hash.__accepted_rollup_defect = this._calculateRollup(node_hash,child_hashes,'__accepted_rollup_defect');
                                 deferred.resolve(node_hash);
@@ -276,9 +276,9 @@ Ext.define('CustomApp', {
                             }
                         });
                     } else {
-                        node_hash.__rollup = this._calculateRollup(node_hash,child_hashes,'__rollup');
-                        node_hash.__accepted_rollup_defect = this._calculateRollup(node_hash,child_hashes,'__accepted_rollup');
-                        node_hash.__rollup = this._calculateRollup(node_hash,child_hashes,'__rollup_defect');
+                        node_hash.__rollup_story = this._calculateRollup(node_hash,child_hashes,'__rollup_story');
+                        node_hash.__accepted_rollup_story = this._calculateRollup(node_hash,child_hashes,'__accepted_rollup_story');
+                        node_hash.__rollup_defect = this._calculateRollup(node_hash,child_hashes,'__rollup_defect');
                         node_hash.__accepted_rollup_defect = this._calculateRollup(node_hash,child_hashes,'__accepted_rollup_defect');
                         deferred.resolve();
                     }
@@ -321,8 +321,8 @@ Ext.define('CustomApp', {
                     }
                     node_hash.children = Ext.Array.push(node_hash.children,child_hashes);
                     
-                    node_hash.__rollup = this._calculateRollup(node_hash,child_hashes,'__rollup');
-                    node_hash.__accepted_rollup = this._calculateRollup(node_hash,child_hashes,'__accepted_rollup');
+                    node_hash.__rollup_story = this._calculateRollup(node_hash,child_hashes,'__rollup_story');
+                    node_hash.__accepted_rollup_story = this._calculateRollup(node_hash,child_hashes,'__accepted_rollup');
                     node_hash.__rollup_defect = this._calculateRollup(node_hash,child_hashes,'__rollup_defect');
                     node_hash.__accepted_rollup_defect = this._calculateRollup(node_hash,child_hashes,'__accepted_rollup_defect');
                     deferred.resolve();
@@ -432,18 +432,18 @@ Ext.define('CustomApp', {
                 menuDisabled: true
             },
             {
-                dataIndex: '__rollup',
-                text: TSGlobals.total_rollup_header,
-                itemId:'total_rollup_column',
-                width: this.getSetting('total_rollup_column') || 100,
+                dataIndex: '__rollup_story',
+                text: TSGlobals.total_rollup_story_header,
+                itemId:'total_rollup_story_column',
+                width: this.getSetting('total_rollup_story_column') || 100,
                 renderer: Ext.util.Format.numberRenderer('0.00'),
                 menuDisabled: true
             },
             {
-                dataIndex: '__accepted_rollup',
-                text: TSGlobals.pert_completed_header,
-                itemId:'pert_completed_column',
-                width: this.getSetting('pert_completed_column') || 100,
+                dataIndex: '__accepted_rollup_story',
+                text: TSGlobals.pert_completed_story_header,
+                itemId:'pert_completed_story_column',
+                width: this.getSetting('pert_completed_story_column') || 100,
                 renderer: Ext.util.Format.numberRenderer('0.00'),
                 menuDisabled: true
             },
@@ -506,6 +506,26 @@ Ext.define('CustomApp', {
                 menuDisabled: true
             });
         }
+        
+        columns.push({
+            dataIndex: '__rollup',
+            text: TSGlobals.total_rollup_header,
+            itemId:'total_rollup_column',
+            width: this.getSetting('total_rollup_column') || 100,
+            renderer: Ext.util.Format.numberRenderer('0.00'),
+            menuDisabled: true
+        });
+        columns.push({
+            dataIndex: '__accepted_rollup',
+            text: TSGlobals.pert_completed_header,
+            itemId:'pert_completed_column',
+            width: this.getSetting('pert_completed_column') || 100,
+            renderer: Ext.util.Format.numberRenderer('0.00'),
+            menuDisabled: true
+        });
+        
+        
+        
         var additional_fields = this.getSetting('additional_fields_for_pis');
         if ( typeof(additional_fields) == "string" ) {
             additional_fields = additional_fields.split(',');
