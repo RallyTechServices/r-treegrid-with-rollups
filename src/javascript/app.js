@@ -829,12 +829,7 @@ Ext.define('CustomApp', {
         node.eachChild(function(child){
             var node_values = [];
             Ext.Array.each(column_names,function(column_name){
-                if ( this._isAPercentageColumn(column_name) ) {
-                    var value = parseFloat(child.get(column_name),10) || 0;
-                    node_values.push(Ext.util.Format.number(value * 100,'0.00'));
-                } else {
-                    node_values.push(child.get(column_name));
-                }
+                node_values.push(this._getValueFromNode(child,column_name));
             },this);
             csv.push('"' + node_values.join('","') + '"');
         },this);
@@ -842,6 +837,19 @@ Ext.define('CustomApp', {
     },
     _isAPercentageColumn:function(column_name) {
         return /__progress/.test(column_name);
+    },
+    _getValueFromNode: function(node,column_name){
+        var value = node.get(column_name);
+        
+        if ( typeof(value) == "object" ) {
+            value = value._refObjectName;
+        }
+        if ( this._isAPercentageColumn(column_name) ) {
+            value = parseFloat(value,10) || 0;
+            value = Ext.util.Format.number(value * 100,'0.00');
+        } 
+        return value;
+        
     },
     _getCSVFromTree:function(tree){
         var columns = tree.columns;
@@ -860,12 +868,7 @@ Ext.define('CustomApp', {
         root.eachChild(function(child){
             var node_values = [];
             Ext.Array.each(column_names,function(column_name){
-                if ( this._isAPercentageColumn(column_name) ) {
-                    var value = parseFloat(child.get(column_name),10) || 0;
-                    node_values.push(Ext.util.Format.number(value * 100,'0.00'));
-                } else {
-                    node_values.push(child.get(column_name));
-                }
+                node_values.push(this._getValueFromNode(child,column_name));
             },this);
             csv.push('"' + node_values.join('","') + '"');
             var child_csv = this._getCSVFromChildren(child,column_names);
