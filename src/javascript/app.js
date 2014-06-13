@@ -829,11 +829,19 @@ Ext.define('CustomApp', {
         node.eachChild(function(child){
             var node_values = [];
             Ext.Array.each(column_names,function(column_name){
-                node_values.push(child.get(column_name));
-            });
+                if ( this._isAPercentageColumn(column_name) ) {
+                    var value = parseFloat(child.get(column_name),10) || 0;
+                    node_values.push(Ext.util.Format.number(value * 100,'0.00'));
+                } else {
+                    node_values.push(child.get(column_name));
+                }
+            },this);
             csv.push('"' + node_values.join('","') + '"');
         },this);
         return csv;
+    },
+    _isAPercentageColumn:function(column_name) {
+        return /__progress/.test(column_name);
     },
     _getCSVFromTree:function(tree){
         var columns = tree.columns;
@@ -852,8 +860,13 @@ Ext.define('CustomApp', {
         root.eachChild(function(child){
             var node_values = [];
             Ext.Array.each(column_names,function(column_name){
-                node_values.push(child.get(column_name));
-            });
+                if ( this._isAPercentageColumn(column_name) ) {
+                    var value = parseFloat(child.get(column_name),10) || 0;
+                    node_values.push(Ext.util.Format.number(value * 100,'0.00'));
+                } else {
+                    node_values.push(child.get(column_name));
+                }
+            },this);
             csv.push('"' + node_values.join('","') + '"');
             var child_csv = this._getCSVFromChildren(child,column_names);
             csv = Ext.Array.push(csv, child_csv);

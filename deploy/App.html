@@ -3,11 +3,11 @@
 <head>
     <title>Rollup Tree Grid</title>
     <!--  (c) 2014 Rally Software Development Corp.  All Rights Reserved. -->
-    <!--  Build Date: Thu Jun 12 2014 19:36:50 GMT-0700 (PDT) -->
+    <!--  Build Date: Thu Jun 12 2014 19:55:35 GMT-0700 (PDT) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Thu Jun 12 2014 19:36:50 GMT-0700 (PDT)";
-        var CHECKSUM = 172003822556;
+        var APP_BUILD_DATE = "Thu Jun 12 2014 19:55:35 GMT-0700 (PDT)";
+        var CHECKSUM = 175197936236;
     </script>
     
     <script type="text/javascript" src="/apps/2.0rc2/sdk.js"></script>
@@ -1767,11 +1767,19 @@ Ext.define('CustomApp', {
         node.eachChild(function(child){
             var node_values = [];
             Ext.Array.each(column_names,function(column_name){
-                node_values.push(child.get(column_name));
-            });
+                if ( this._isAPercentageColumn(column_name) ) {
+                    var value = parseFloat(child.get(column_name),10) || 0;
+                    node_values.push(Ext.util.Format.number(value * 100,'0.00'));
+                } else {
+                    node_values.push(child.get(column_name));
+                }
+            },this);
             csv.push('"' + node_values.join('","') + '"');
         },this);
         return csv;
+    },
+    _isAPercentageColumn:function(column_name) {
+        return /__progress/.test(column_name);
     },
     _getCSVFromTree:function(tree){
         var columns = tree.columns;
@@ -1790,8 +1798,13 @@ Ext.define('CustomApp', {
         root.eachChild(function(child){
             var node_values = [];
             Ext.Array.each(column_names,function(column_name){
-                node_values.push(child.get(column_name));
-            });
+                if ( this._isAPercentageColumn(column_name) ) {
+                    var value = parseFloat(child.get(column_name),10) || 0;
+                    node_values.push(Ext.util.Format.number(value * 100,'0.00'));
+                } else {
+                    node_values.push(child.get(column_name));
+                }
+            },this);
             csv.push('"' + node_values.join('","') + '"');
             var child_csv = this._getCSVFromChildren(child,column_names);
             csv = Ext.Array.push(csv, child_csv);
