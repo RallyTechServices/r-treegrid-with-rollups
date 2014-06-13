@@ -3,11 +3,11 @@
 <head>
     <title>Rollup Tree Grid</title>
     <!--  (c) 2014 Rally Software Development Corp.  All Rights Reserved. -->
-    <!--  Build Date: Thu Jun 12 2014 18:53:46 GMT-0700 (PDT) -->
+    <!--  Build Date: Thu Jun 12 2014 18:57:28 GMT-0700 (PDT) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Thu Jun 12 2014 18:53:46 GMT-0700 (PDT)";
-        var CHECKSUM = 163579804603;
+        var APP_BUILD_DATE = "Thu Jun 12 2014 18:57:28 GMT-0700 (PDT)";
+        var CHECKSUM = 163776305554;
     </script>
     
     <script type="text/javascript" src="/apps/2.0rc2/sdk.js"></script>
@@ -946,7 +946,7 @@ Ext.define('CustomApp', {
                 text:'Save As CSV',
                 scope: this,
                 handler: function() {
-                    csv = this._getCSVFromTree(tree);
+                    var csv = this._getCSVFromTree(tree);
                     this._saveCSVToFile(csv,'pert.csv',{type:'text/csv;charset=utf-8'});
                 }
             });
@@ -1539,7 +1539,7 @@ Ext.define('CustomApp', {
         });
     },
     _nameRenderer: function(value,meta_data,record) {
-        var display_value = value;
+        var display_value = record.get('FormattedID') + ": " + value;
         var url = Rally.nav.Manager.getDetailUrl( record );
         return "<a target='_blank' href='" + url + "'>" + display_value + "</a>";
     },

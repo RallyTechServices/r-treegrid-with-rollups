@@ -25,7 +25,7 @@ Ext.define('CustomApp', {
                 text:'Save As CSV',
                 scope: this,
                 handler: function() {
-                    csv = this._getCSVFromTree(tree);
+                    var csv = this._getCSVFromTree(tree);
                     this._saveCSVToFile(csv,'pert.csv',{type:'text/csv;charset=utf-8'});
                 }
             });
@@ -618,7 +618,7 @@ Ext.define('CustomApp', {
         });
     },
     _nameRenderer: function(value,meta_data,record) {
-        var display_value = value;
+        var display_value = record.get('FormattedID') + ": " + value;
         var url = Rally.nav.Manager.getDetailUrl( record );
         return "<a target='_blank' href='" + url + "'>" + display_value + "</a>";
     },
