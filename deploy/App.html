@@ -3,11 +3,11 @@
 <head>
     <title>Rollup Tree Grid</title>
     <!--  (c) 2014 Rally Software Development Corp.  All Rights Reserved. -->
-    <!--  Build Date: Thu Jun 12 2014 18:57:28 GMT-0700 (PDT) -->
+    <!--  Build Date: Thu Jun 12 2014 19:13:40 GMT-0700 (PDT) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Thu Jun 12 2014 18:57:28 GMT-0700 (PDT)";
-        var CHECKSUM = 163776305554;
+        var APP_BUILD_DATE = "Thu Jun 12 2014 19:13:40 GMT-0700 (PDT)";
+        var CHECKSUM = 164212965494;
     </script>
     
     <script type="text/javascript" src="/apps/2.0rc2/sdk.js"></script>
@@ -1504,6 +1504,10 @@ Ext.define('CustomApp', {
             cls: 'rally-grid',
             rootVisible: false,
             enableColumnMove: true,
+            rowLines: true,
+            viewConfig : {
+                stripeRows : true
+            },
             listeners: {
                 scope: this,
                 columnresize: this._saveColumnSizes,
@@ -1776,6 +1780,7 @@ Ext.define('CustomApp', {
 
 .app {
 }
+
 .tsinfolink {
     position:absolute;
     right:0px;

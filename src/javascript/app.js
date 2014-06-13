@@ -583,6 +583,10 @@ Ext.define('CustomApp', {
             cls: 'rally-grid',
             rootVisible: false,
             enableColumnMove: true,
+            rowLines: true,
+            viewConfig : {
+                stripeRows : true
+            },
             listeners: {
                 scope: this,
                 columnresize: this._saveColumnSizes,
