@@ -841,7 +841,7 @@ Ext.define('CustomApp', {
     _getValueFromNode: function(node,column_name){
         var value = node.get(column_name);
         
-        if ( typeof(value) == "object" ) {
+        if ( value && typeof(value) == "object" ) {
             value = value._refObjectName;
         }
         if ( this._isAPercentageColumn(column_name) ) {

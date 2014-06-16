@@ -3,11 +3,11 @@
 <head>
     <title>Rollup Tree Grid</title>
     <!--  (c) 2014 Rally Software Development Corp.  All Rights Reserved. -->
-    <!--  Build Date: Fri Jun 13 2014 09:24:58 GMT-0700 (PDT) -->
+    <!--  Build Date: Mon Jun 16 2014 13:28:20 GMT-0700 (PDT) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Fri Jun 13 2014 09:24:58 GMT-0700 (PDT)";
-        var CHECKSUM = 174878794713;
+        var APP_BUILD_DATE = "Mon Jun 16 2014 13:28:20 GMT-0700 (PDT)";
+        var CHECKSUM = 174926156815;
     </script>
     
     <script type="text/javascript" src="/apps/2.0rc2/sdk.js"></script>
@@ -1781,7 +1781,7 @@ Ext.define('CustomApp', {
     _getValueFromNode: function(node,column_name){
         var value = node.get(column_name);
         
-        if ( typeof(value) == "object" ) {
+        if ( value && typeof(value) == "object" ) {
             value = value._refObjectName;
         }
         if ( this._isAPercentageColumn(column_name) ) {
