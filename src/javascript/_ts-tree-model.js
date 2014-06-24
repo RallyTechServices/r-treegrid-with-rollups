@@ -26,6 +26,18 @@ var convertTotalDelta = function(value,record) {
     }
     return "";
 };
+var convertRemainingStory = function(value,record) {
+    var done = record.get('__accepted_rollup_story') || 0;
+    var total = record.get('__rollup_story') || 0;
+    var delta = total-done;
+    return delta;
+};
+var convertRemainingDefect = function(value,record) {
+    var done = record.get('__accepted_rollup_defect') || 0;
+    var total = record.get('__rollup_defect') || 0;
+    var delta = total-done;
+    return delta;
+};
 var convertRemaining = function(value,record) {
     var done = record.get('__accepted_rollup') || 0;
     var total = record.get('__rollup') || 0;
@@ -75,6 +87,8 @@ Ext.define('TSTreeModel',{
         { name: '__calculated_accepted_delta', type: 'Float', convert: convertAcceptedDelta },
         { name: '__calculated_total_delta', type: 'Float', convert: convertTotalDelta },
         { name: '__calculated_remaining', type:'Float', convert: convertRemaining },
+        { name: '__calculated_remaining_story', type:'Float', convert: convertRemainingStory },
+        { name: '__calculated_remaining_defect', type:'Float', convert: convertRemainingDefect },
         { name: '__progress_by_original', type: 'Float', convert: convertProgressByOriginal },
         { name: '__progress_by_rollup', type: 'Float', convert: convertProgressByRollup },
         { name: '__is_top_pi', type: 'Boolean', defaultValue: false }

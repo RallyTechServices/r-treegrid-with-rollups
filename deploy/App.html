@@ -3,11 +3,11 @@
 <head>
     <title>Rollup Tree Grid</title>
     <!--  (c) 2014 Rally Software Development Corp.  All Rights Reserved. -->
-    <!--  Build Date: Mon Jun 16 2014 13:28:20 GMT-0700 (PDT) -->
+    <!--  Build Date: Mon Jun 23 2014 18:37:15 GMT-0700 (PDT) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Mon Jun 16 2014 13:28:20 GMT-0700 (PDT)";
-        var CHECKSUM = 174926156815;
+        var APP_BUILD_DATE = "Mon Jun 23 2014 18:37:15 GMT-0700 (PDT)";
+        var CHECKSUM = 183484961262;
     </script>
     
     <script type="text/javascript" src="/apps/2.0rc2/sdk.js"></script>
@@ -27,7 +27,9 @@
     pert_completed_header: 'Total Rollup Completed',
     pert_completed_story_header: 'Stories (Completed)',
     pert_completed_defect_header: 'Defects (Completed)',
-    pert_remaining_header: 'Remaining (Total)',
+    pert_remaining_header: 'Total (Remaining)',
+    pert_remaining_story_header: 'Story (Remaining)',
+    pert_remaining_defect_header: 'Defect (Remaining)',
     accepted_delta_header: 'Delta (Completed)',
     total_delta_header: 'Delta (Total)',
     tree_header: 'Name'
@@ -369,6 +371,18 @@ var convertTotalDelta = function(value,record) {
     }
     return "";
 };
+var convertRemainingStory = function(value,record) {
+    var done = record.get('__accepted_rollup_story') || 0;
+    var total = record.get('__rollup_story') || 0;
+    var delta = total-done;
+    return delta;
+};
+var convertRemainingDefect = function(value,record) {
+    var done = record.get('__accepted_rollup_defect') || 0;
+    var total = record.get('__rollup_defect') || 0;
+    var delta = total-done;
+    return delta;
+};
 var convertRemaining = function(value,record) {
     var done = record.get('__accepted_rollup') || 0;
     var total = record.get('__rollup') || 0;
@@ -418,6 +432,8 @@ Ext.define('TSTreeModel',{
         { name: '__calculated_accepted_delta', type: 'Float', convert: convertAcceptedDelta },
         { name: '__calculated_total_delta', type: 'Float', convert: convertTotalDelta },
         { name: '__calculated_remaining', type:'Float', convert: convertRemaining },
+        { name: '__calculated_remaining_story', type:'Float', convert: convertRemainingStory },
+        { name: '__calculated_remaining_defect', type:'Float', convert: convertRemainingDefect },
         { name: '__progress_by_original', type: 'Float', convert: convertProgressByOriginal },
         { name: '__progress_by_rollup', type: 'Float', convert: convertProgressByRollup },
         { name: '__is_top_pi', type: 'Boolean', defaultValue: false }
@@ -1385,6 +1401,26 @@ Ext.define('CustomApp', {
                 itemId:'pert_completed_story_column',
                 width: this.getSetting('pert_completed_story_column') || 100,
                 renderer: Ext.util.Format.numberRenderer('0.00'),
+                menuDisabled: true
+            },
+            {
+                dataIndex: '__calculated_remaining_story',
+                text: TSGlobals.pert_remaining_story_header,
+                itemId:'pert_remaining_story_column',
+                width: this.getSetting('pert_remaining_story_column') || 100,
+                renderer: function(value,meta_data,record){
+                    return Ext.util.Format.number(value, '0.00');
+                },
+                menuDisabled: true
+            },
+            {
+                dataIndex: '__calculated_remaining_defect',
+                text: TSGlobals.pert_remaining_defect_header,
+                itemId:'pert_remaining_defect_column',
+                width: this.getSetting('pert_remaining_defect_column') || 100,
+                renderer: function(value,meta_data,record){
+                    return Ext.util.Format.number(value, '0.00');
+                },
                 menuDisabled: true
             },
             {

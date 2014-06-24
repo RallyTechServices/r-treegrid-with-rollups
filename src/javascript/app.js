@@ -448,6 +448,26 @@ Ext.define('CustomApp', {
                 menuDisabled: true
             },
             {
+                dataIndex: '__calculated_remaining_story',
+                text: TSGlobals.pert_remaining_story_header,
+                itemId:'pert_remaining_story_column',
+                width: this.getSetting('pert_remaining_story_column') || 100,
+                renderer: function(value,meta_data,record){
+                    return Ext.util.Format.number(value, '0.00');
+                },
+                menuDisabled: true
+            },
+            {
+                dataIndex: '__calculated_remaining_defect',
+                text: TSGlobals.pert_remaining_defect_header,
+                itemId:'pert_remaining_defect_column',
+                width: this.getSetting('pert_remaining_defect_column') || 100,
+                renderer: function(value,meta_data,record){
+                    return Ext.util.Format.number(value, '0.00');
+                },
+                menuDisabled: true
+            },
+            {
                 dataIndex: '__calculated_remaining',
                 text: TSGlobals.pert_remaining_header,
                 itemId:'pert_remaining_column',
