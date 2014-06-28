@@ -3,7 +3,7 @@ Ext.define('CustomApp', {
     componentCls: 'app',
     logger: new Rally.technicalservices.Logger(),
     items: [
-        {xtype:'container',itemId:'message_box'},
+        {xtype:'container',itemId:'message_box', margin: 5},
         {xtype:'container',itemId:'selector_box', margin: 5},
         {xtype:'container',itemId:'display_box', margin: 5},
         {xtype:'tsinfolink'}
@@ -53,6 +53,7 @@ Ext.define('CustomApp', {
         this.calculate_defect_field_name = this.getSetting('calculate_defect_field_name');
         this.calculate_original_field_name = this.getSetting('calculate_original_field_name');
         this.include_defects = this.getSetting('include_defects');
+        this.logger.log("Settings: ", this.getSettings());
         
         if ( this._needsSettings() ) {
             deferred.reject("Select 'Edit App Settings' from the gear menu to configure fields to use for calculations");
@@ -69,6 +70,7 @@ Ext.define('CustomApp', {
                         Ext.Array.each(records,function(record){
                             pi_names.push(Ext.util.Format.lowercase(record.get('TypePath')));
                         });
+
                         deferred.resolve(pi_names);
                     }
                 }
@@ -141,71 +143,87 @@ Ext.define('CustomApp', {
         this.logger.log("_getPITreeStore",pi_paths);
         this._mask("Gathering Portfolio Item data...");
         
+        var filters = [{property:'ObjectID',operator:'>',value:0}];
+        
+        var pi_filter_field = this.getSetting('pi_filter_field');
+        var pi_filter_value = this.getSetting('pi_filter_value');
+
+        if ( pi_filter_field && pi_filter_value ) {
+            filters = [{property:pi_filter_field,value:pi_filter_value}];
+        }
         Ext.create('Rally.data.wsapi.Store', {
             model: pi_paths[0],
+            filters: filters,
             autoLoad: true,
             listeners: {
                 scope: this,
                 load: function(store, top_pis, success) {
-                    var top_pi_hashes = [];
-                    var promises = [];
-                    Ext.Array.each(top_pis,function(top_pi){
-                        var pi_data = top_pi.getData();
-                        pi_data.__original_value = top_pi.get(me.calculate_original_field_name);
-                        pi_data.leaf = true;
-                        if ( top_pi.get('Children') && top_pi.get('Children').Count > 0 ) {
-                            pi_data.leaf = false;
-                            pi_data.expanded = false;
-                            pi_data.__is_top_pi = true;
-                            promises.push( me._getChildren(pi_data,pi_paths) );
-                        }
-                        top_pi_hashes.push(pi_data);
-                    });
-                    
-                    
-                    // extend the model to add additional fields
-                    var additional_fields = this.getSetting('additional_fields_for_pis');
-                    if ( typeof(additional_fields) == "string" ) {
-                        additional_fields = additional_fields.split(',');
-                    }
-                    
-                    var fields = [];
-                    Ext.Array.each(additional_fields, function(field) {
-                        me.logger.log("Making model with field: ",field);
-                        if ( typeof(field) == 'object' ) {
-                            fields.push(me._getFieldNameFromDisplay(field.get('name')));
-                        } else {
-                            fields.push(me._getFieldNameFromDisplay(field));
-                        }
-                    });
+                    if ( top_pis.length === 0 ) {
+                        this.down('#message_box').add({
+                            xtype:'container',
+                            html:'Cannot find a ' + pi_paths[0] + ' that matches the criteria'
+                        });
+                        this._unmask();
+                    } else {
+                        var top_pi_hashes = [];
+                        var promises = [];
+                        Ext.Array.each(top_pis,function(top_pi){
+                            var pi_data = top_pi.getData();
+                            pi_data.__original_value = top_pi.get(me.calculate_original_field_name);
+                            pi_data.leaf = true;
+                            if ( top_pi.get('Children') && top_pi.get('Children').Count > 0 ) {
+                                pi_data.leaf = false;
+                                pi_data.expanded = false;
+                                pi_data.__is_top_pi = true;
+                                promises.push( me._getChildren(pi_data,pi_paths) );
+                            }
+                            top_pi_hashes.push(pi_data);
+                        });
                         
-                    var model = {
-                        extend: 'TSTreeModel',
-                        fields: fields
-                    };
-                    
-                    me.logger.log("Made a model using these fields: ", fields);
-                    
-                    Ext.define('TSTreeModelWithAdditions', model);
-                    
-                    Deft.Promise.all(promises).then({
-                        scope: this,
-                        success: function(node_hashes){
-                            this._mask("Structuring Data into Tree...");
-                            var tree_store = Ext.create('Ext.data.TreeStore',{
-                                model: TSTreeModelWithAdditions,
-                                root: {
-                                    expanded: false,
-                                    children: top_pi_hashes
-                                }
-                            });
-                            this._addTreeGrid(tree_store);
-                        },
-                        failure:function (error) {
-                            alert(error);
+                        
+                        // extend the model to add additional fields
+                        var additional_fields = this.getSetting('additional_fields_for_pis');
+                        if ( typeof(additional_fields) == "string" ) {
+                            additional_fields = additional_fields.split(',');
                         }
-                    });
-                    
+                        
+                        var fields = [];
+                        Ext.Array.each(additional_fields, function(field) {
+                            me.logger.log("Making model with field: ",field);
+                            if ( typeof(field) == 'object' ) {
+                                fields.push(me._getFieldNameFromDisplay(field.get('name')));
+                            } else {
+                                fields.push(me._getFieldNameFromDisplay(field));
+                            }
+                        });
+                            
+                        var model = {
+                            extend: 'TSTreeModel',
+                            fields: fields
+                        };
+                        
+                        me.logger.log("Made a model using these fields: ", fields);
+                        
+                        Ext.define('TSTreeModelWithAdditions', model);
+                        
+                        Deft.Promise.all(promises).then({
+                            scope: this,
+                            success: function(node_hashes){
+                                this._mask("Structuring Data into Tree...");
+                                var tree_store = Ext.create('Ext.data.TreeStore',{
+                                    model: TSTreeModelWithAdditions,
+                                    root: {
+                                        expanded: false,
+                                        children: top_pi_hashes
+                                    }
+                                });
+                                this._addTreeGrid(tree_store);
+                            },
+                            failure:function (error) {
+                                alert(error);
+                            }
+                        });
+                    }
                 }
             },
             fetch:me._getFieldsToFetch()
@@ -693,52 +711,91 @@ Ext.define('CustomApp', {
         
         return child_filter;
     },
-    getSettingsFields: function() {
-        var _chooseOnlyNumberFields = function(field){
-            var should_show_field = true;
-            var forbidden_fields = ['FormattedID','ObjectID'];
-            if ( field.hidden ) {
-                should_show_field = false;
-            }
-            if ( field.attributeDefinition ) {
-                var type = field.attributeDefinition.AttributeType;
-                if ( type != "QUANTITY" && type != "INTEGER" && type != "DECIMAL"  ) {
-                    should_show_field = false;
-                }
-                if ( Ext.Array.indexOf(forbidden_fields,field.name) > -1 ) {
-                    should_show_field = false;
-                }
-            } else {
-                should_show_field = false;
-            }
-            return should_show_field;
-        };
+    _ignoreTextFields: function(field) {
+        var should_show_field = true;
+        var forbidden_fields = ['FormattedID','ObjectID','DragAndDropRank','Name'];
+        if ( field.hidden ) {
+            should_show_field = false;
+        }
         
-        var _ignoreTextFields = function(field){
-            var should_show_field = true;
-            var forbidden_fields = ['FormattedID','ObjectID','DragAndDropRank','Name'];
-            if ( field.hidden ) {
+        if ( field.attributeDefinition ) {
+            
+            var type = field.attributeDefinition.AttributeType;
+            if ( type == "TEXT" || type == "OBJECT" || type == "COLLECTION" ) {
                 should_show_field = false;
             }
-            if ( field.attributeDefinition ) {
-                var type = field.attributeDefinition.AttributeType;
-                if ( type == "TEXT" || type == "OBJECT" || type == "COLLECTION" ) {
-                    should_show_field = false;
-                }
-                if ( field.name == "Owner" ) {
-                    should_show_field = true;
-                }
-                if ( field.name == "c_SOWReference") {
-                    should_show_field = true;
-                }
-                if ( Ext.Array.indexOf(forbidden_fields,field.name) > -1 ) {
-                    should_show_field = false;
-                }
-            } else {
+            if ( field.name == "Owner" ) {
+                should_show_field = true;
+            }
+            if ( field.name == "c_SOWReference") {
+                should_show_field = true;
+            }
+            if ( Ext.Array.indexOf(forbidden_fields,field.name) > -1 ) {
                 should_show_field = false;
             }
-            return should_show_field;
-        };
+        } else {
+            should_show_field = false;
+        }
+        return should_show_field;
+    },
+    _chooseOnlyNumberFields: function(field){
+        var should_show_field = true;
+        var forbidden_fields = ['FormattedID','ObjectID'];
+        if ( field.hidden ) {
+            should_show_field = false;
+        }
+        if ( field.attributeDefinition ) {
+            var type = field.attributeDefinition.AttributeType;
+            if ( type != "QUANTITY" && type != "INTEGER" && type != "DECIMAL"  ) {
+                should_show_field = false;
+            }
+            if ( Ext.Array.indexOf(forbidden_fields,field.name) > -1 ) {
+                should_show_field = false;
+            }
+        } else {
+            should_show_field = false;
+        }
+        return should_show_field;
+    },
+    _ignoreNonDropdownFields: function(field){
+        var should_show_field = true;
+        var forbidden_fields = ['FormattedID','ObjectID',
+            'DragAndDropRank','Name', 'Attachments', 'Changesets',
+            'Discussion', 'Project', 'RevisionHistory',
+            'Subscription','Workspace', 'PortfolioItemType',
+            'State'];
+        if ( field.hidden ) {
+            should_show_field = false;
+        }
+        if ( field.attributeDefinition ) {
+            var type = field.attributeDefinition.AttributeType;
+            var allowed_values_type = field.attributeDefinition.AllowedValueType;
+            var allowed_values = field.attributeDefinition.AllowedValues;
+            var xtype = null;
+            var editor = field.editor;
+            if ( editor ) {
+                xtype = editor.xtype;
+            }
+            
+            //console.log( field.name, allowed_values_type, typeof(allowed_values), field);
+            
+            if ( xtype != "rallyfieldvaluecombobox" ) {
+                should_show_field = false;
+            }
+            
+            if ( Ext.Array.indexOf(forbidden_fields,field.name) > -1 ) {
+                should_show_field = false;
+            }
+        } else {
+            should_show_field = false;
+        }
+        return should_show_field;
+    },
+    getSettingsFields: function() {
+        var _chooseOnlyNumberFields = _chooseOnlyNumberFields;
+        var _ignoreTextFields = this._ignoreTextFields;
+        var _ignoreNonDropdownFields = this._ignoreNonDropdownFields;
+                
         return [
             {
                 name: 'calculate_original_field_name',
@@ -786,13 +843,56 @@ Ext.define('CustomApp', {
                 fieldLabel: 'Additional fields for Portfolio Items:',
                 _shouldShowField: _ignoreTextFields,
                 width: 300,
-                alwaysExpanded: false,
-                autoExpand: true,
                 labelWidth: 150,
                 listeners: {
                     ready: function(picker){ picker.collapse(); }
                 },
                 readyEvent: 'ready' //event fired to signify readiness
+            },
+            {
+                name: 'pi_filter_field',
+                xtype:'rallyfieldcombobox',
+                model:'PortfolioItem',
+                fieldLabel: 'Field for Filtering:',
+                _isNotHidden: _ignoreNonDropdownFields,
+                width: 300,
+                labelWidth: 150,
+                readyEvent:'ready',
+                listeners: {
+                    change: function(cb) {
+                        // this.logger.log(cb.getValue());
+                        var outer_box = this.ownerCt;
+                        if ( outer_box.down('#pi_filter_value') ) {
+                            outer_box.down('#pi_filter_value').destroy();
+                        }
+                        if ( outer_box.down('#pi_filter_value') ) {
+                            outer_box.down('#pi_filter_value').destroy();
+                        }
+                        if ( cb.getValue() ) {
+                            outer_box.add({
+                                name: 'pi_filter_value',
+                                itemId:'pi_filter_value',
+                                xtype:'rallyfieldvaluecombobox',
+                                width: 300,
+                                labelWidth: 150,
+                                model: 'PortfolioItem',
+                                field: cb.getValue(),
+                                fieldLabel: 'Filter on: '
+                            });
+                        }
+                    }
+                }
+            },
+            {
+                name: 'pi_filter_value',
+                itemId:'pi_filter_value',
+                xtype:'container',
+                width: 300,
+                labelWidth: 150,
+                model: 'PortfolioItem',
+                field: 'Owner',
+                fieldLabel: ' ',
+                readyEvent:'ready'
             }
         ];
     },
