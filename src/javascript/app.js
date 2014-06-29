@@ -217,7 +217,7 @@ Ext.define('CustomApp', {
                                         children: top_pi_hashes
                                     }
                                 });
-                                this._addTreeGrid(tree_store);
+                                this._addTreeGrid(tree_store,top_pi_hashes);
                             },
                             failure:function (error) {
                                 alert(error);
@@ -412,6 +412,7 @@ Ext.define('CustomApp', {
                 dataIndex: '__original_value',
                 text: TSGlobals.original_pert_header,
                 itemId:'original_pert_column',
+                showTotal: true,
                 width: this.getSetting('original_pert_column') || 100,
                 menuDisabled: true
             },
@@ -452,6 +453,7 @@ Ext.define('CustomApp', {
             {
                 dataIndex: '__rollup_story',
                 text: TSGlobals.total_rollup_story_header,
+                showTotal: true,
                 itemId:'total_rollup_story_column',
                 width: this.getSetting('total_rollup_story_column') || 100,
                 renderer: Ext.util.Format.numberRenderer('0.00'),
@@ -460,6 +462,7 @@ Ext.define('CustomApp', {
             {
                 dataIndex: '__accepted_rollup_story',
                 text: TSGlobals.pert_completed_story_header,
+                showTotal: true,
                 itemId:'pert_completed_story_column',
                 width: this.getSetting('pert_completed_story_column') || 100,
                 renderer: Ext.util.Format.numberRenderer('0.00'),
@@ -468,6 +471,7 @@ Ext.define('CustomApp', {
             {
                 dataIndex: '__calculated_remaining_story',
                 text: TSGlobals.pert_remaining_story_header,
+                showTotal: true,
                 itemId:'pert_remaining_story_column',
                 width: this.getSetting('pert_remaining_story_column') || 100,
                 renderer: function(value,meta_data,record){
@@ -479,6 +483,7 @@ Ext.define('CustomApp', {
                 dataIndex: '__calculated_remaining_defect',
                 text: TSGlobals.pert_remaining_defect_header,
                 itemId:'pert_remaining_defect_column',
+                showTotal: true,
                 width: this.getSetting('pert_remaining_defect_column') || 100,
                 renderer: function(value,meta_data,record){
                     return Ext.util.Format.number(value, '0.00');
@@ -489,6 +494,7 @@ Ext.define('CustomApp', {
                 dataIndex: '__calculated_remaining',
                 text: TSGlobals.pert_remaining_header,
                 itemId:'pert_remaining_column',
+                showTotal: true,
                 width: this.getSetting('pert_remaining_column') || 100,
                 renderer: function(value,meta_data,record){
                     return Ext.util.Format.number(value, '0.00');
@@ -498,6 +504,7 @@ Ext.define('CustomApp', {
             {
                 dataIndex: '__calculated_accepted_delta',
                 text: TSGlobals.accepted_delta_header,
+                showTotal: true,
                 itemId:'accepted_delta_column',
                 width: this.getSetting('accepted_delta_column') || 100,
                 renderer: function(value,meta_data,record){
@@ -513,6 +520,7 @@ Ext.define('CustomApp', {
             {
                 dataIndex: '__calculated_total_delta',
                 text: TSGlobals.total_delta_header,
+                showTotal: true,
                 itemId:'total_delta_column',
                 width: this.getSetting('total_delta_column') || 100,
                 renderer: function(value,meta_data,record){
@@ -531,6 +539,7 @@ Ext.define('CustomApp', {
                 dataIndex: '__rollup_defect',
                 text: TSGlobals.total_rollup_defect_header,
                 itemId:'total_rollup_defect_column',
+                showTotal: true,
                 width: this.getSetting('total_rollup_defect_column') || 100,
                 renderer: Ext.util.Format.numberRenderer('0.00'),
                 menuDisabled: true
@@ -538,6 +547,7 @@ Ext.define('CustomApp', {
             columns.push({
                 dataIndex: '__accepted_rollup_defect',
                 text: TSGlobals.pert_completed_defect_header,
+                showTotal: true,
                 itemId:'pert_completed_defect_column',
                 width: this.getSetting('pert_completed_defect_column') || 100,
                 renderer: Ext.util.Format.numberRenderer('0.00'),
@@ -549,6 +559,7 @@ Ext.define('CustomApp', {
             dataIndex: '__rollup',
             text: TSGlobals.total_rollup_header,
             itemId:'total_rollup_column',
+                showTotal: true,
             width: this.getSetting('total_rollup_column') || 100,
             renderer: Ext.util.Format.numberRenderer('0.00'),
             menuDisabled: true
@@ -556,6 +567,7 @@ Ext.define('CustomApp', {
         columns.push({
             dataIndex: '__accepted_rollup',
             text: TSGlobals.pert_completed_header,
+                showTotal: true,
             itemId:'pert_completed_column',
             width: this.getSetting('pert_completed_column') || 100,
             renderer: Ext.util.Format.numberRenderer('0.00'),
@@ -630,10 +642,27 @@ Ext.define('CustomApp', {
         
         return arranged_columns;
     },
-    _addTreeGrid: function(tree_store) {
+    _addTreeGrid: function(tree_store,top_pi_hashes) {
         this.logger.log("creating TreeGrid");
         var me = this;
         this._unmask();
+        
+        var columns = this._getColumns();
+
+        Ext.Array.each(columns,function(column){
+            var total = 0;
+            if ( column.showTotal ) {
+                Ext.Array.each(top_pi_hashes, function(pi){
+                    var pi_model = Ext.create(TSTreeModel,pi); // convert so calculations happen
+                    
+                    var value = pi_model.get(column.dataIndex) || 0;
+                    
+                    total = total + value;
+                },this);
+                column.text = column.text + " [" + Ext.util.Format.number(total,'0.00') + "]";
+            }
+        },this);
+
         
         var pi_tree = this.down('#display_box').add({
             xtype:'treepanel',
@@ -650,7 +679,7 @@ Ext.define('CustomApp', {
                 columnresize: this._saveColumnSizes,
                 columnmove: this._saveColumnPositions
             },
-            columns: this._getColumns()
+            columns: columns
         });
         
         this._addButton(pi_tree);
@@ -744,8 +773,10 @@ Ext.define('CustomApp', {
         if ( field.hidden ) {
             should_show_field = false;
         }
+        
         if ( field.attributeDefinition ) {
             var type = field.attributeDefinition.AttributeType;
+            
             if ( type != "QUANTITY" && type != "INTEGER" && type != "DECIMAL"  ) {
                 should_show_field = false;
             }
@@ -792,7 +823,7 @@ Ext.define('CustomApp', {
         return should_show_field;
     },
     getSettingsFields: function() {
-        var _chooseOnlyNumberFields = _chooseOnlyNumberFields;
+        var _chooseOnlyNumberFields = this._chooseOnlyNumberFields;
         var _ignoreTextFields = this._ignoreTextFields;
         var _ignoreNonDropdownFields = this._ignoreNonDropdownFields;
                 
@@ -834,7 +865,7 @@ Ext.define('CustomApp', {
                 width: 300,
                 labelWidth: 150,
                 value: true,
-                readEvent: 'ready'
+                readyEvent: 'ready'
             },
             {
                 name: 'additional_fields_for_pis',
