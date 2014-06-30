@@ -148,7 +148,7 @@ Ext.define('CustomApp', {
         var pi_filter_field = this.getSetting('pi_filter_field');
         var pi_filter_value = this.getSetting('pi_filter_value');
 
-        if ( pi_filter_field && pi_filter_value ) {
+        if ( pi_filter_field && pi_filter_value && pi_filter_value != "-1" ) {
             filters = [{property:pi_filter_field,value:pi_filter_value}];
         }
         Ext.create('Rally.data.wsapi.Store', {
@@ -904,6 +904,25 @@ Ext.define('CustomApp', {
                                 name: 'pi_filter_value',
                                 itemId:'pi_filter_value',
                                 xtype:'rallyfieldvaluecombobox',
+                                allEntryText: '-- ALL --',
+                                allowNoEntry: true,
+                                _insertNoEntry: function(){
+                                    var record;
+                                    var doesNotHaveAllEntry = this.store.count() < 1 || this.store.getAt(0).get(this.displayField) !== this.allEntrylText;
+                                    if (doesNotHaveAllEntry) {
+                                        record = Ext.create(this.store.model);
+                                        record.set(this.displayField, this.allEntryText);
+                                        record.set(this.valueField, "-1");
+                                        this.store.insert(0, record);
+                                    }
+                                    var doesNotHaveNoEntry = this.store.count() < 2 || this.store.getAt(1).get(this.displayField) !== this.noEntryText;
+                                    if (doesNotHaveNoEntry) {
+                                        record = Ext.create(this.store.model);
+                                        record.set(this.displayField, this.noEntryText);
+                                        record.set(this.valueField, null);
+                                        this.store.insert(1, record);
+                                    }
+                                },
                                 width: 300,
                                 labelWidth: 150,
                                 model: 'PortfolioItem',
