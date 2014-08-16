@@ -3,11 +3,11 @@
 <head>
     <title>Rollup Tree Grid</title>
     <!--  (c) 2014 Rally Software Development Corp.  All Rights Reserved. -->
-    <!--  Build Date: Sun Jun 29 2014 17:06:35 GMT-0700 (PDT) -->
+    <!--  Build Date: Sat Aug 16 2014 15:54:23 GMT-0700 (PDT) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Sun Jun 29 2014 17:06:35 GMT-0700 (PDT)";
-        var CHECKSUM = 216197201978;
+        var APP_BUILD_DATE = "Sat Aug 16 2014 15:54:23 GMT-0700 (PDT)";
+        var CHECKSUM = 243514618501;
     </script>
     
     <script type="text/javascript" src="/apps/2.0rc2/sdk.js"></script>
@@ -1008,7 +1008,10 @@ Ext.define('CustomApp', {
         this.calculate_story_field_name = this.getSetting('calculate_story_field_name');
         this.calculate_defect_field_name = this.getSetting('calculate_defect_field_name');
         this.calculate_original_field_name = this.getSetting('calculate_original_field_name');
-        this.include_defects = this.getSetting('include_defects');
+        this.include_defects_under_stories = false;
+        this.include_defects_under_pis = true;
+        this.defect_link_field = this.getSetting('defect_link_field');
+
         this.logger.log("Settings: ", this.getSettings());
         
         if ( this._needsSettings() ) {
@@ -1078,6 +1081,10 @@ Ext.define('CustomApp', {
                 fields_to_fetch.push(me._getFieldNameFromDisplay(field));
             }
         });
+        
+        if ( this.defect_link_field ) {
+            fields_to_fetch.push(this.defect_link_field);
+        }
         this.logger.log("Fetch these fields: ", fields_to_fetch);
         return fields_to_fetch;
     },
@@ -1111,6 +1118,7 @@ Ext.define('CustomApp', {
             model: pi_paths[0],
             filters: filters,
             autoLoad: true,
+            fetch:me._getFieldsToFetch(),
             listeners: {
                 scope: this,
                 load: function(store, top_pis, success) {
@@ -1133,6 +1141,7 @@ Ext.define('CustomApp', {
                                 pi_data.__is_top_pi = true;
                                 promises.push( me._getChildren(pi_data,pi_paths) );
                             }
+                            promises.push(me._getDefectsForPI(pi_data,pi_paths));
                             top_pi_hashes.push(pi_data);
                         });
                         
@@ -1181,9 +1190,81 @@ Ext.define('CustomApp', {
                         });
                     }
                 }
-            },
-            fetch:me._getFieldsToFetch()
+            }
         });
+    },
+    _getDefectsForPI: function(node_hash,pi_paths){
+        var deferred = Ext.create('Deft.Deferred');
+        this._mask("Gathering Defects...");
+        this.logger.log('_getDefectsForPI ', this.defect_link_field, node_hash);
+        var link = node_hash[this.defect_link_field];
+        
+        if (link) {
+            var defect_node_hash = {
+                leaf: true,
+                expanded: false,
+                FormattedID:'',
+                Name: 'Defects'
+            };
+            
+            if ( !node_hash.children ) {
+                node_hash.children = [];
+            }
+            
+            Ext.create('Rally.data.wsapi.Store',{
+                model: 'Defect',
+                filters: [
+                    { property: this.defect_link_field, value: node_hash[this.defect_link_field] }
+                ],
+                fetch: this._getFieldsToFetch(),
+                context: { project: null },
+                autoLoad: true,
+                listeners: {
+                    scope: this,
+                    load: function(store, records) {
+                        var total_rollup = 0;
+                        var child_hashes = [];
+                        if ( records.length > 0 ) {
+                            defect_node_hash.leaf = false;
+                            node_hash.leaf = false;
+                        }
+                        Ext.Array.each(records,function(record){
+                            var record_data = record.getData();
+                            record_data.leaf = true;
+                            
+                            // set value for calculating field
+                            record_data.__rollup_defect = record.get(this.calculate_defect_field_name);
+                            this.logger.log("DEFECT ", this.calculate_defect_field_name, record);
+                            if ( this._isAccepted(record_data) && this._isClosed(record_data )) {
+                                record_data.__accepted_rollup_defect = record.get(this.calculate_defect_field_name);
+                            }
+                            child_hashes.push(record_data);
+                        }, this);
+                        
+                        if ( !defect_node_hash.children ) {
+                            defect_node_hash.children = [];
+                        }
+                        defect_node_hash.children = Ext.Array.push(defect_node_hash.children,child_hashes);
+                        
+                        defect_node_hash.__rollup_defect = this._calculateRollup(defect_node_hash,child_hashes,'__rollup_defect');
+                        defect_node_hash.__accepted_rollup_defect = this._calculateRollup(defect_node_hash,child_hashes,'__accepted_rollup_defect');
+
+                        node_hash.children = Ext.Array.push(node_hash.children,[defect_node_hash]);
+                        node_hash.__rollup_defect = this._calculateRollup(node_hash,node_hash.children,'__rollup_defect');
+                        node_hash.__accepted_rollup_defect = this._calculateRollup(node_hash,node_hash.children,'__accepted_rollup_defect');
+
+                        
+                        deferred.resolve();
+                    }
+
+                }
+            });
+        } else {
+            this.logger.log("No defect link for ", node_hash.FormattedID);
+            deferred.resolve();
+        }
+        
+        return deferred;
     },
     _getChildren:function(node_hash,pi_paths) {
         var deferred = Ext.create('Deft.Deferred');
@@ -1217,7 +1298,7 @@ Ext.define('CustomApp', {
                             promises.push( me._getChildren(record_data,pi_paths) );
                         }
                         
-                        if ( me.include_defects && record.get('Defects') && record.get('Defects').Count > 0 ) {
+                        if ( me.include_defects_under_stories && record.get('Defects') && record.get('Defects').Count > 0 ) {
                             record_data.leaf = false;
                             promises.push( me._getDefects(record_data) );
                         }
@@ -1490,7 +1571,7 @@ Ext.define('CustomApp', {
                 menuDisabled: true
             }];
         
-        if ( this.include_defects ) {
+        if ( this.include_defects_under_stories || this.include_defects_under_pis ) {
             columns.push({
                 dataIndex: '__rollup_defect',
                 text: TSGlobals.total_rollup_defect_header,
@@ -1665,9 +1746,13 @@ Ext.define('CustomApp', {
         });
     },
     _nameRenderer: function(value,meta_data,record) {
-        var display_value = record.get('FormattedID') + ": " + value;
-        var url = Rally.nav.Manager.getDetailUrl( record );
-        return "<a target='_blank' href='" + url + "'>" + display_value + "</a>";
+        var display_value = record.get('Name');
+        if ( record.get('FormattedID') ) {
+            var link_text = record.get('FormattedID') + ": " + value;
+            var url = Rally.nav.Manager.getDetailUrl( record );
+            display_value = "<a target='_blank' href='" + url + "'>" + link_text + "</a>";
+        }
+        return display_value;
     },
     _getChildModelForItem: function(node_hash,pi_paths){
         var parent_model = Ext.util.Format.lowercase(node_hash._type);
@@ -1782,8 +1867,13 @@ Ext.define('CustomApp', {
         var _chooseOnlyNumberFields = this._chooseOnlyNumberFields;
         var _ignoreTextFields = this._ignoreTextFields;
         var _ignoreNonDropdownFields = this._ignoreNonDropdownFields;
-                
-        return [
+        
+        var container_box = { xtype:'container', layout: {type:'hbox'} };
+        
+        var left_box = { xtype:'container', layout: {type:'vbox'}, margin: 5};
+        var right_box = { xtype:'container', layout: {type:'vbox'}, margin: 5 };
+        
+        left_box.items = [
             {
                 name: 'calculate_original_field_name',
                 xtype: 'rallyfieldcombobox',
@@ -1815,25 +1905,13 @@ Ext.define('CustomApp', {
                 readyEvent: 'ready' //event fired to signify readiness
             },
             {
-                name: 'include_defects',
-                xtype: 'rallycheckboxfield',
-                fieldLabel: 'Show Defects',
+                name: 'defect_link_field',
+                xtype: 'rallyfieldcombobox',
+                model: 'PortfolioItem',
+                fieldLabel: 'Field to Connect Defects:',
+                _isNotHidden: _ignoreTextFields,
                 width: 300,
                 labelWidth: 150,
-                value: true,
-                readyEvent: 'ready'
-            },
-            {
-                name: 'additional_fields_for_pis',
-                xtype: 'rallyfieldpicker',
-                modelTypes: ['PortfolioItem'],
-                fieldLabel: 'Additional fields for Portfolio Items:',
-                _shouldShowField: _ignoreTextFields,
-                width: 300,
-                labelWidth: 150,
-                listeners: {
-                    ready: function(picker){ picker.collapse(); }
-                },
                 readyEvent: 'ready' //event fired to signify readiness
             },
             {
@@ -1892,7 +1970,7 @@ Ext.define('CustomApp', {
             {
                 name: 'pi_filter_value',
                 itemId:'pi_filter_value',
-                xtype:'container',
+                xtype:'rallycheckboxfield',
                 width: 300,
                 labelWidth: 150,
                 model: 'PortfolioItem',
@@ -1901,6 +1979,37 @@ Ext.define('CustomApp', {
                 readyEvent:'ready'
             }
         ];
+        
+        right_box.items= [
+            {
+                name: 'additional_fields_for_pis',
+                xtype: 'rallyfieldpicker',
+                modelTypes: ['PortfolioItem'],
+                fieldLabel: 'Additional fields for Portfolio Items:',
+                _shouldShowField: _ignoreTextFields,
+                width: 300,
+                labelWidth: 150,
+                listeners: {
+                    ready: function(picker){ picker.collapse(); }
+                },
+                readyEvent: 'ready' //event fired to signify readiness
+            }
+        ];
+        
+        container_box.items = [ left_box, right_box ];
+        
+        return [ container_box ];
+    },
+    _setSettingsFromComponents: function(cmp,fields){
+        for ( var i=0; i<fields.length; i++ ) {
+            var field = fields[i];
+            if ( field.xtype == 'container' ) {
+                this._setSettingsFromComponents(cmp,field.items);
+            } else {
+                this.settings[field.name] = cmp.up('rallydialog').down('[name="' + field.name + '"]').getValue();
+            }
+        }
+        return true;
     },
     // ONLY FOR RUNNING EXTERNALLY
     _showExternalSettingsDialog: function(fields){
@@ -1912,15 +2021,14 @@ Ext.define('CustomApp', {
              width: 400,
              title: 'Settings',
              buttons: [{ 
+                scope: this,
                 text: 'OK',
                 handler: function(cmp){
-                    var settings = {};
-                    Ext.Array.each(fields,function(field){
-                        settings[field.name] = cmp.up('rallydialog').down('[name="' + field.name + '"]').getValue();
-                    });
-                    me.settings = settings;
+                    this.settings = {};
+                    this._setSettingsFromComponents(cmp,fields);
+                    
                     cmp.up('rallydialog').destroy();
-                    me._getData();
+                    this._getData();
                 }
             }],
              items: [
