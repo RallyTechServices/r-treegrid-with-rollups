@@ -956,7 +956,6 @@ Ext.define('CustomApp', {
                 fieldLabel: 'Show Defects',
                 width: 300,
                 labelWidth: 150,
-                value: true,
                 readyEvent: 'ready'
             },
             {
@@ -979,16 +978,15 @@ Ext.define('CustomApp', {
                 labelWidth: 150,
                 readyEvent:'ready',
                 listeners: {
-                    change: function(cb) {
-                        // this.logger.log(cb.getValue());
+                    setvalue: function() {                        
                         var outer_box = this.ownerCt;
-                        if ( outer_box.down('#pi_filter_value') ) {
+                        if ( outer_box && outer_box.down('#pi_filter_value') ) {
                             outer_box.down('#pi_filter_value').destroy();
                         }
-                        if ( outer_box.down('#pi_filter_value') ) {
+                        if ( outer_box && outer_box.down('#pi_filter_value') ) {
                             outer_box.down('#pi_filter_value').destroy();
                         }
-                        if ( cb.getValue() ) {
+                        if ( this.getValue() && this.getValue() !== null ) {
                             outer_box.add({
                                 name: 'pi_filter_value',
                                 itemId:'pi_filter_value',
@@ -1015,7 +1013,7 @@ Ext.define('CustomApp', {
                                 width: 300,
                                 labelWidth: 150,
                                 model: 'PortfolioItem',
-                                field: cb.getValue(),
+                                field: this.getValue(),
                                 fieldLabel: 'Filter on: '
                             });
                         }
@@ -1025,7 +1023,7 @@ Ext.define('CustomApp', {
             {
                 name: 'pi_filter_value',
                 itemId:'pi_filter_value',
-                xtype:'rallycheckboxfield',
+                xtype:'label',
                 width: 300,
                 labelWidth: 150,
                 model: 'PortfolioItem',
