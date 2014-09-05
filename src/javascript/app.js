@@ -53,7 +53,7 @@ Ext.define('CustomApp', {
         this.calculate_defect_field_name = this.getSetting('calculate_defect_field_name');
         this.calculate_original_field_name = this.getSetting('calculate_original_field_name');
         this.include_defects_under_stories = false;
-        this.include_defects_under_pis = true;
+        this.include_defects_under_pis = this.getSetting('include_defects');;
         this.defect_link_field = this.getSetting('defect_link_field');
 
         this.logger.log("Settings: ", this.getSettings());
@@ -90,7 +90,7 @@ Ext.define('CustomApp', {
             this.logger.log("Missing field on defect");
             return true;
         } 
-        if ( typeof(this.calculate_original_field_name) == 'undefined' ) {
+        if ( typeof(this.calculate_original_field_name) == 'undefined' && this.include_defects_under_pis ) {
             this.logger.log("Missing original value field");
             return true;
         } 
@@ -129,7 +129,6 @@ Ext.define('CustomApp', {
         if ( this.defect_link_field ) {
             fields_to_fetch.push(this.defect_link_field);
         }
-        this.logger.log("Fetch these fields: ", fields_to_fetch);
         return fields_to_fetch;
     },
     _getFieldNameFromDisplay: function(field_name) {
@@ -185,7 +184,9 @@ Ext.define('CustomApp', {
                                 pi_data.__is_top_pi = true;
                                 promises.push( me._getChildren(pi_data,pi_paths) );
                             }
-                            promises.push(me._getDefectsForPI(pi_data,pi_paths));
+                            if (  me.include_defects_under_pis ) {
+                                promises.push(me._getDefectsForPI(pi_data,pi_paths));
+                            }
                             top_pi_hashes.push(pi_data);
                         });
                         
@@ -219,6 +220,7 @@ Ext.define('CustomApp', {
                             scope: this,
                             success: function(node_hashes){
                                 this._mask("Structuring Data into Tree...");
+                                this.logger.log(top_pi_hashes);
                                 var tree_store = Ext.create('Ext.data.TreeStore',{
                                     model: TSTreeModelWithAdditions,
                                     root: {
@@ -947,6 +949,15 @@ Ext.define('CustomApp', {
                 labelWidth: 150,
                 _isNotHidden: _chooseOnlyNumberFields,
                 readyEvent: 'ready' //event fired to signify readiness
+            },
+            {
+                name: 'include_defects',
+                xtype: 'rallycheckboxfield',
+                fieldLabel: 'Show Defects',
+                width: 300,
+                labelWidth: 150,
+                value: true,
+                readyEvent: 'ready'
             },
             {
                 name: 'defect_link_field',
